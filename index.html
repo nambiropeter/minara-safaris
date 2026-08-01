@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minara Safaris | Kenya ↔ USA Holiday Bookings</title>
+    <meta
+      name="description"
+      content="Minara Safaris helps travelers from Kenya book holidays to the USA and travelers from the USA discover Kenya."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a href="#" class="logo">Minara Safaris</a>
+        <nav>
+          <a href="#destinations">Destinations</a>
+          <a href="#packages">Packages</a>
+          <a href="#how">How It Works</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <a class="btn btn-sm" href="#quote">Get a Quote</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <p class="eyebrow">Kenya ↔ USA Travel Experts</p>
+            <h1>Book memorable holidays between Kenya and the United States</h1>
+            <p class="lead">
+              A simple MVP experience for flight planning, holiday packages, and
+              personalized itineraries with Minara Safaris.
+            </p>
+            <div class="hero-cta">
+              <a class="btn" href="#quote">Start Planning</a>
+              <a class="btn btn-ghost" href="#packages">View Packages</a>
+            </div>
+          </div>
+          <div class="hero-card">
+            <h3>Quick Travel Snapshot</h3>
+            <ul>
+              <li><strong>Nairobi → New York</strong> (City Break)</li>
+              <li><strong>Mombasa → Miami</strong> (Beach Holiday)</li>
+              <li><strong>Dallas → Nairobi</strong> (Safari Tour)</li>
+              <li><strong>Chicago → Maasai Mara</strong> (Wildlife Adventure)</li>
+            </ul>
+            <p class="small">*Pricing and availability are placeholders in this MVP.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="destinations" class="section">
+        <div class="container">
+          <h2>Popular Destination Paths</h2>
+          <div class="cards two">
+            <article class="card">
+              <h3>From Kenya to the USA</h3>
+              <p>
+                Discover city tours, shopping getaways, theme parks, and beach
+                escapes across major U.S. destinations.
+              </p>
+              <ul>
+                <li>New York, Orlando, Los Angeles, Miami</li>
+                <li>Visa guidance and travel planning support</li>
+                <li>Flexible hotel categories and trip lengths</li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>From the USA to Kenya</h3>
+              <p>
+                Experience safaris, coast holidays, and cultural excursions
+                across Kenya with local expertise.
+              </p>
+              <ul>
+                <li>Nairobi, Maasai Mara, Diani, Amboseli</li>
+                <li>Airport pickup and curated experiences</li>
+                <li>Adventure, luxury, and family package options</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="packages" class="section section-muted">
+        <div class="container">
+          <h2>Featured Holiday Packages</h2>
+          <div class="cards three">
+            <article class="card">
+              <p class="tag">Kenya → USA</p>
+              <h3>New York Explorer</h3>
+              <p>7 days, hotel + city passes + return flight (mock package).</p>
+              <p class="price">From KES 245,000</p>
+              <button class="btn btn-block" type="button">Request Details</button>
+            </article>
+            <article class="card">
+              <p class="tag">USA → Kenya</p>
+              <h3>Classic Safari Escape</h3>
+              <p>6 days in Nairobi and Maasai Mara with game drives.</p>
+              <p class="price">From USD 2,100</p>
+              <button class="btn btn-block" type="button">Request Details</button>
+            </article>
+            <article class="card">
+              <p class="tag">Kenya ↔ USA</p>
+              <h3>Family Holiday Combo</h3>
+              <p>Custom multi-stop holiday planning for families and groups.</p>
+              <p class="price">Custom Quote</p>
+              <button class="btn btn-block" type="button">Request Details</button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" class="section">
+        <div class="container">
+          <h2>How Minara Safaris Works</h2>
+          <div class="steps">
+            <div class="step">
+              <span>1</span>
+              <h4>Share your plan</h4>
+              <p>Tell us where you are traveling from and your preferred dates.</p>
+            </div>
+            <div class="step">
+              <span>2</span>
+              <h4>Get a draft itinerary</h4>
+              <p>We prepare a holiday option with flights, stay, and activities.</p>
+            </div>
+            <div class="step">
+              <span>3</span>
+              <h4>Confirm & travel</h4>
+              <p>Finalize your booking and receive travel support before departure.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="quote" class="section section-muted">
+        <div class="container form-wrap">
+          <div>
+            <h2>Request a Holiday Quote</h2>
+            <p>
+              This form is part of the MVP UI and does not submit to a backend.
+            </p>
+          </div>
+          <form class="quote-form">
+            <label>
+              Full Name
+              <input type="text" placeholder="Jane Doe" />
+            </label>
+            <label>
+              Email Address
+              <input type="email" placeholder="you@example.com" />
+            </label>
+            <label>
+              Travel Direction
+              <select>
+                <option>Kenya to USA</option>
+                <option>USA to Kenya</option>
+                <option>Multi-country / Custom</option>
+              </select>
+            </label>
+            <label>
+              Preferred Month
+              <input type="text" placeholder="e.g. December 2026" />
+            </label>
+            <label class="full">
+              Notes
+              <textarea rows="4" placeholder="Tell us your budget and interests"></textarea>
+            </label>
+            <button class="btn full" type="button">Submit Request</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer id="contact" class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h4>Minara Safaris</h4>
+          <p>Connecting Kenya and the USA through memorable travel experiences.</p>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <p>Email: hello@minarasafaris.com</p>
+          <p>Phone: +254 700 000 000</p>
+        </div>
+        <div>
+          <h4>Office Hours</h4>
+          <p>Mon - Fri: 8:00 AM - 6:00 PM</p>
+          <p>Sat: 9:00 AM - 2:00 PM</p>
+        </div>
+      </div>
+      <p class="copyright">© 2026 Minara Safaris. MVP Demo Website.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
