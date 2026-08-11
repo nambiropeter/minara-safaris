@@ -50,8 +50,10 @@ Execution tracker. Scope lives in `docs/PRD.md`; stack and invariants in `CLAUDE
 
 ## Phase 3 — Public site (PRD §4)
 
-- [ ] Layout, header/footer, nav, sticky mobile CTA bar
-- [ ] Home — hero, featured packages, deals strip, destination tiles, trust bar
+- [x] Layout, header/footer, nav, sticky mobile CTA bar — public site moved into a `(site)` route group so Payload's admin doesn't inherit the chrome. Spacer element keeps the fixed mobile bar off the last row of content
+- [x] Home — hero, featured packages, deals strip (renders only when a package carries an `offerLabel`), destination tiles, "how booking goes", closing CTA. Trust bar deliberately absent: nothing that feeds it is confirmed, and the page is composed to hold without it
+- [x] `pnpm seed` — 4 media, 4 destinations, 6 packages of **synthetic** content so the design is judged against real-shaped data. Refuses to run with `NODE_ENV=production`. Delete before launch
+- [x] Design system recorded in `DESIGN.md`; direction contract emitted as a real HTML comment in the built markup (a JSX comment is stripped by the compiler and audits nothing)
 - [ ] Package catalogue — filters (destination, duration, price, tags) + sort
 - [ ] Package detail — gallery, price block, itinerary, inclusions/exclusions
 - [ ] Destination pages
@@ -82,6 +84,8 @@ Execution tracker. Scope lives in `docs/PRD.md`; stack and invariants in `CLAUDE
 - [ ] Accessibility pass — landmarks, alt text, focus states, contrast ≥ 4.5:1
 
 ## Phase 6 — Launch
+
+- [ ] **Delete all seeded content** (`pnpm seed` output) — 6 packages with synthetic prices, 4 destinations, 4 stock images. Prices in particular are invented and must never reach production
 
 - [ ] Vercel project, region co-located with Neon (Frankfurt)
 - [ ] Staging on `noindex` until content lands

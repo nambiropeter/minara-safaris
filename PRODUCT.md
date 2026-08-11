@@ -80,7 +80,25 @@ The name is Minara Safaris. A logo exists in some form but has not been
 confirmed as final — treat it as provisional and do not build an identity that
 breaks if it changes.
 
-No voice guide, tagline, or brand reference has been established.
+No voice guide or tagline has been established.
+
+**Visual direction is a standing commitment, chosen deliberately on 2026-08-11:
+the category convention, executed at a craft level the category does not reach.**
+Offered a dealt alternative (a lithographic East African Railways poster-and-fare-table
+world) and two further alternates, the owner took the category standard on purpose.
+Convention is therefore the commitment — no irony, no smuggled quirk, no partial
+subversion. Warm ground, large photography, restrained type, one accent, destination
+tiles. The tokens already in `src/app/globals.css` are that world and stand confirmed.
+
+The craft bar is set by three references, in order of how they apply:
+
+- **Modern adventure-travel brands** (Much Better Adventures, Intrepid, Flash Pack) —
+  the primary bar. Conversion-forward and price-transparent: itineraries laid out
+  plainly, inclusions stated up front, a visible human to talk to.
+- **Editorial travel publishing** (Condé Nast Traveller, Suitcase, Fathom) — the bar
+  for typography, image handling, and the article template the SEO strategy depends on.
+- **Kenyan market peers** (Bonfire, Perfect Wilderness, Gamewatchers) — the floor to
+  beat and evidence of local expectations, not a craft reference.
 
 ## Evidence on Hand
 

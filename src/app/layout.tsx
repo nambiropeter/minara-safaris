@@ -18,6 +18,21 @@ const figtree = Figtree({
   display: "swap",
 });
 
+const DIRECTION_CONTRACT = `<!--
+THESIS: The category convention at a craft level the category never reaches. It refuses the
+price-as-bait hook: every figure ships with its conditions and the resident rate beside it.
+OWN-WORLD: Warm paper ground, burnt sienna primary, gold reserved for offer badges, green only
+for WhatsApp. Newsreader display over Figtree UI. Photography in tall crops, rules not boxes.
+STORY: A real Kenyan operator, real trips, honest prices, and a person who answers. The visitor
+browses first and messages from a package page, never cold.
+FIRST VIEWPORT: Headline left at display scale above two CTAs — browse primary, WhatsApp second —
+with a portrait photograph bleeding off the right edge; on phones the image leads and the headline
+sits beneath it.
+FORM: Category canon, chosen deliberately over the dealt direction. Seed 0fdedae7, canon.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the
+verdict, and DESIGN.md
+-->`;
+
 export const metadata: Metadata = {
   title: {
     default: "Minara Safaris — Kenyan safaris and East African tours",
@@ -35,6 +50,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${figtree.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        {/*
+          The direction contract has to survive into the emitted markup — a JSX
+          comment is stripped by the compiler and audits nothing, so it ships as
+          a real HTML comment.
+        */}
+        <div hidden dangerouslySetInnerHTML={{ __html: DIRECTION_CONTRACT }} />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

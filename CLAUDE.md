@@ -49,6 +49,8 @@ Payload/Next 16 compatibility was verified 2026-08-10 (PRD §8.3). Payload 4 is 
 - Type roles are tokens, not ad-hoc sizes: `text-display`, `text-title`, `text-heading`, `text-lead`, `text-label`. Newsreader (`font-heading`/`font-serif`) for headings and blog prose, Figtree (`font-sans`) for UI and body. Two families, no third.
 - Icons: import from `@/components/icons`, never from `@phosphor-icons/react` directly. The root export is the client build and reads `IconContext`, so it breaks server components; `icons.ts` re-exports the per-icon `dist/ssr/*` build instead. Deep paths also matter because Phosphor isn't in Next's `optimizePackageImports` defaults, so a barrel import has nothing but tree-shaking protecting the bundle. `weight="regular"` for 16–20px metadata glyphs, `weight="fill"` for brand marks and 32px+.
 - Touch targets ≥44px. `Button` `size="cta"` exists because shadcn's scale tops out at 36px.
+- Public pages live in `src/app/(site)/`, which owns the header/footer/mobile-CTA shell. The root layout is html/body/fonts/theme only, so Payload's `(payload)` admin doesn't inherit site chrome.
+- Money is rendered by `PriceBlock` and nothing else — that's what makes "never a bare price" structural rather than a habit. Server reads go through `src/lib/content.ts` (Payload local API), never `fetch`.
 - Scope discipline is the point of this project. If a request sounds like Phase 2 (payments, accounts, booking, reviews, multi-currency), check PRD §9 before building it.
 - Prefer deleting to adding. The PRD was already cut down once from a three-service design.
 
@@ -65,4 +67,4 @@ Do not log completed work here — that belongs in `docs/WORK-PLAN.md`. Do not r
 
 ## Status
 
-Pre-build. Repo is a bare Next 16 + Tailwind 4 scaffold (`src/app/` only). The original static-HTML prototype lives in `legacy/`. Nothing from the PRD has been implemented yet — Payload is not installed.
+Phases 1–2 done. Phase 3 in progress: shared shell + home page built, seeded with synthetic content via `pnpm seed`. Remaining Phase 3: catalogue, package detail, destination pages, articles, static pages, error states. `DESIGN.md` records the visual system. The original static-HTML prototype lives in `legacy/`.

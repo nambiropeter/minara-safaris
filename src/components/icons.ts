@@ -19,9 +19,12 @@
  * Each module exports both `MapPin` and `MapPinIcon`; the unsuffixed alias is
  * deprecated upstream, so re-export the `*Icon` symbol and drop the suffix here.
  */
+export { ArrowRightIcon as ArrowRight } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 export { CalendarBlankIcon as CalendarBlank } from "@phosphor-icons/react/dist/ssr/CalendarBlank";
+export { ListIcon as List } from "@phosphor-icons/react/dist/ssr/List";
 export { MapPinIcon as MapPin } from "@phosphor-icons/react/dist/ssr/MapPin";
 export { MoonIcon as Moon } from "@phosphor-icons/react/dist/ssr/Moon";
 export { SunIcon as Sun } from "@phosphor-icons/react/dist/ssr/Sun";
 export { UsersIcon as Users } from "@phosphor-icons/react/dist/ssr/Users";
 export { WhatsappLogoIcon as WhatsappLogo } from "@phosphor-icons/react/dist/ssr/WhatsappLogo";
+export { XIcon as X } from "@phosphor-icons/react/dist/ssr/X";
