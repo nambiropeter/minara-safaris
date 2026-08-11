@@ -1,0 +1,80 @@
+import type { CollectionConfig } from 'payload'
+import { seoField } from '../fields/seo.mts'
+
+export const Packages: CollectionConfig = {
+  slug: 'packages',
+  access: { read: () => true },
+  admin: {
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'isPublished', 'isFeatured', 'priceFrom'],
+  },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    { name: 'durationDays', type: 'number', required: true, min: 1 },
+    {
+      type: 'row',
+      fields: [
+        { name: 'priceFrom', type: 'number', required: true, min: 0 },
+        // Never render a bare price — priceNote is required alongside it.
+        { name: 'priceNote', type: 'text', required: true },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        { name: 'priceResident', type: 'number', min: 0, admin: { description: 'KE/EA resident rate, where it differs' } },
+        {
+          name: 'currency',
+          type: 'select',
+          defaultValue: 'KES',
+          options: ['KES', 'USD'],
+        },
+      ],
+    },
+    { name: 'offerLabel', type: 'text', admin: { description: 'e.g. "Easter Special" — drives the homepage deals strip' } },
+    { name: 'summary', type: 'textarea', required: true, admin: { description: 'Short teaser for cards' } },
+    { name: 'description', type: 'richText' },
+    {
+      name: 'itinerary',
+      type: 'array',
+      fields: [
+        { name: 'day', type: 'number', required: true, min: 1 },
+        { name: 'title', type: 'text', required: true },
+        { name: 'description', type: 'textarea' },
+      ],
+    },
+    { name: 'inclusions', type: 'text', hasMany: true },
+    { name: 'exclusions', type: 'text', hasMany: true },
+    { name: 'tags', type: 'text', hasMany: true, admin: { description: 'Trip style: safari, beach, honeymoon, family, etc.' } },
+    {
+      name: 'destinations',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      admin: { description: 'Combo tours (e.g. Kenya+Tanzania) are a real product — add every destination this package visits' },
+      fields: [
+        { name: 'destination', type: 'relationship', relationTo: 'destinations', required: true },
+        { name: 'isPrimary', type: 'checkbox', defaultValue: false },
+      ],
+    },
+    {
+      name: 'images',
+      type: 'array',
+      admin: { description: 'Order here is display order' },
+      fields: [
+        { name: 'image', type: 'upload', relationTo: 'media', required: true },
+        { name: 'isCover', type: 'checkbox', defaultValue: false },
+      ],
+    },
+    { name: 'ogImage', type: 'upload', relationTo: 'media' },
+    {
+      type: 'row',
+      fields: [
+        { name: 'isFeatured', type: 'checkbox', defaultValue: false },
+        { name: 'isPublished', type: 'checkbox', defaultValue: false },
+      ],
+    },
+    seoField,
+  ],
+}
