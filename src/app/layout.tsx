@@ -22,12 +22,14 @@ const DIRECTION_CONTRACT = `<!--
 THESIS: The category convention at a craft level the category never reaches. It refuses the
 price-as-bait hook: every figure ships with its conditions and the resident rate beside it.
 OWN-WORLD: Warm paper ground, burnt sienna primary, gold reserved for offer badges, green only
-for WhatsApp. Newsreader display over Figtree UI. Photography in tall crops, rules not boxes.
+for WhatsApp. Newsreader display over Figtree UI. Photography leads — overlapping rotated frames
+in the hero, tall crops in cards and tiles.
 STORY: A real Kenyan operator, real trips, honest prices, and a person who answers. The visitor
 browses first and messages from a package page, never cold.
-FIRST VIEWPORT: Headline left at display scale above two CTAs — browse primary, WhatsApp second —
-with a portrait photograph bleeding off the right edge; on phones the image leads and the headline
-sits beneath it.
+FIRST VIEWPORT: Headline and two CTAs — browse primary, WhatsApp second — on the left five
+columns. On the right, five photographs scattered as an overlapping stack, each rotated a few
+degrees and captioned with a place-name pill, the portrait Mara frame centred on top; hovering one
+lifts it upright and above the pile. On phones the stack drops beneath the headline.
 FORM: Category canon, chosen deliberately over the dealt direction. Seed 0fdedae7, canon.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the
 verdict, and DESIGN.md
