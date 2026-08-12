@@ -50,10 +50,16 @@ are fixed so product surfaces stay spatially predictable. Prose is capped by the
 
 - Container is `max-w-6xl` with `px-5 sm:px-8`. Sections separate by generous
   vertical space and 1px rules; alternating bands use `bg-secondary/40`.
-- **Photography is the material.** Package cards are 4:5, destination tiles 3:4,
-  the hero a portrait 2:3 bleeding off the right edge on desktop and leading
-  above the headline on phones. Images scale 1.03–1.04 on card hover, 500ms
-  ease-out; nothing else moves.
+- **Photography is the material.** Package cards are 4:5, destination tiles 3:4.
+- **The hero is a scattered stack**, not a single frame: five photographs
+  overlapping inside a fixed-height column, each rotated a few degrees
+  (−6° to +6°), each carrying a place-name pill bottom-left on a
+  `bg-black/50 backdrop-blur` chip, with the portrait Mara frame centred on top
+  at `z-20`. Hovering one lifts it above the pile and rotates it toward upright.
+  The stack sits right of the headline on desktop and drops beneath it on
+  phones. This is the one place the site uses rotation, layered z-index and
+  drop shadows; everywhere else is flat and squared.
+- Images scale 1.03–1.05 on hover, 500ms ease-out; nothing else moves.
 - Cards are image-first with the text block beneath. No nested cards. No kicker
   or eyebrow labels above headings — the heading carries its own weight.
 - The "How booking actually goes" steps are numbered because the sequence is the

@@ -70,3 +70,96 @@ export function destinationNames(pkg: Package): string[] {
     .map((entry) => asDestination(entry.destination)?.name)
     .filter((name): name is string => Boolean(name));
 }
+
+export async function getPackageBySlug(slug: string): Promise<Package | null> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "packages",
+    where: { slug: { equals: slug }, isPublished: { equals: true } },
+    limit: 1,
+    depth: 2,
+  });
+  return docs[0] ?? null;
+}
+
+/** Same primary destination, different package — the catalogue is small enough that "related" just means "elsewhere in it". */
+export async function getRelatedPackages(pkg: Package, limit = 3): Promise<Package[]> {
+  const slugs = destinationNames(pkg);
+  if (slugs.length === 0) return [];
+  const all = await getPublishedPackages();
+  return all
+    .filter((other) => other.id !== pkg.id && destinationNames(other).some((name) => slugs.includes(name)))
+    .slice(0, limit);
+}
+
+export async function getPublishedPackages(): Promise<Package[]> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "packages",
+    where: { isPublished: { equals: true } },
+    limit: 200,
+    depth: 2,
+  });
+  return docs;
+}
+
+export type PackageFilters = {
+  destination?: string;
+  tag?: string;
+  duration?: "short" | "medium" | "long";
+  budget?: "low" | "mid" | "high";
+};
+
+export type PackageSort = "featured" | "price-asc" | "price-desc" | "duration-asc";
+
+const DURATION_RANGES: Record<NonNullable<PackageFilters["duration"]>, [number, number]> = {
+  short: [1, 3],
+  medium: [4, 6],
+  long: [7, Infinity],
+};
+
+/** KES only — a mixed-currency catalogue would need conversion first, and nothing sold here is in a second currency yet. */
+const BUDGET_RANGES: Record<NonNullable<PackageFilters["budget"]>, [number, number]> = {
+  low: [0, 50000],
+  mid: [50000, 100000],
+  high: [100000, Infinity],
+};
+
+export function filterPackages(packages: Package[], filters: PackageFilters): Package[] {
+  return packages.filter((pkg) => {
+    if (filters.destination) {
+      const inDestination = (pkg.destinations ?? []).some(
+        (entry) => asDestination(entry.destination)?.slug === filters.destination,
+      );
+      if (!inDestination) return false;
+    }
+    if (filters.tag && !(pkg.tags ?? []).includes(filters.tag)) return false;
+    if (filters.duration) {
+      const [min, max] = DURATION_RANGES[filters.duration];
+      if (pkg.durationDays < min || pkg.durationDays > max) return false;
+    }
+    if (filters.budget) {
+      const [min, max] = BUDGET_RANGES[filters.budget];
+      if (pkg.priceFrom < min || pkg.priceFrom > max) return false;
+    }
+    return true;
+  });
+}
+
+export function sortPackages(packages: Package[], sort: PackageSort): Package[] {
+  const sorted = [...packages];
+  switch (sort) {
+    case "price-asc":
+      return sorted.sort((a, b) => a.priceFrom - b.priceFrom);
+    case "price-desc":
+      return sorted.sort((a, b) => b.priceFrom - a.priceFrom);
+    case "duration-asc":
+      return sorted.sort((a, b) => a.durationDays - b.durationDays);
+    default:
+      return sorted.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured));
+  }
+}
+
+export function packageTags(packages: Package[]): string[] {
+  return Array.from(new Set(packages.flatMap((pkg) => pkg.tags ?? []))).sort();
+}
