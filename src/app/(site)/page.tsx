@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { ArrowRight } from "@/components/icons";
+import { ArrowRight, MagnifyingGlass } from "@/components/icons";
 import { PackageCard } from "@/components/package-card";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export default async function HomePage() {
 
   return (
     <main>
+      <SearchEntrySection />
       <Hero />
       {offers.length > 0 && <Offers packages={offers} />}
       <Featured packages={featured} />
@@ -30,6 +31,76 @@ export default async function HomePage() {
       <HowItWorks />
       <Close />
     </main>
+  );
+}
+
+function SearchEntrySection() {
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8 sm:pt-8">
+      <SearchEntryBar />
+    </section>
+  );
+}
+
+function SearchEntryBar() {
+  const tabs = [
+    { key: "safaris", label: "Safaris & Tours", href: "/packages", active: true },
+    { key: "hotels", label: "Hotels", href: "/contact", active: false },
+    { key: "custom", label: "Custom Trip", href: "/contact", active: false },
+  ] as const;
+
+  const suggestedLinks = [
+    { label: "Maasai Mara", href: "/destinations/maasai-mara" },
+    { label: "Diani Beach", href: "/destinations/diani-beach" },
+    { label: "Amboseli", href: "/destinations/amboseli" },
+  ];
+
+  return (
+    <div className="rounded-3xl border border-border bg-secondary/40 p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-background p-1 ring-1 ring-border">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.key}
+            render={<Link href={tab.href} />}
+            variant={tab.active ? "default" : "ghost"}
+            size="sm"
+            className="flex-1 justify-center rounded-xl"
+          >
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+
+      <form action="/packages" method="get" className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+        <label className="flex h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-muted-foreground shadow-sm">
+          <MagnifyingGlass className="size-4 shrink-0" />
+          <input
+            name="q"
+            placeholder="Search destination, trip style, or keyword"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+        <Button size="cta" type="submit">
+          Search trips
+          <ArrowRight />
+        </Button>
+      </form>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <span className="text-label uppercase tracking-[0.2em] text-muted-foreground">
+          Quick picks
+        </span>
+        {suggestedLinks.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="rounded-full bg-background px-3 py-1.5 text-foreground ring-1 ring-border transition-colors hover:bg-muted"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

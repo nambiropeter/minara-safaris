@@ -21,12 +21,17 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function PackagesPage({ searchParams }: PageProps<"/packages">) {
-  const params = await searchParams;
+type PackagesPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function PackagesPage({ searchParams }: PackagesPageProps) {
+  const params = (await searchParams) ?? {};
   const destination = first(params.destination);
   const tag = first(params.tag);
   const duration = DURATIONS.find((v) => v === first(params.duration));
   const budget = BUDGETS.find((v) => v === first(params.budget));
+  const query = first(params.q);
   const sort = SORTS.find((v) => v === first(params.sort)) ?? "featured";
 
   const [allPackages, destinations] = await Promise.all([
@@ -34,7 +39,7 @@ export default async function PackagesPage({ searchParams }: PageProps<"/package
     getDestinations(20),
   ]);
 
-  const filters: PackageFilters = { destination, tag, duration, budget };
+  const filters: PackageFilters = { destination, tag, duration, budget, query };
   const filtered = sortPackages(filterPackages(allPackages, filters), sort);
   const tags = packageTags(allPackages);
   const hasFilters = Boolean(destination || tag || duration || budget);

@@ -17,13 +17,20 @@ import { Users } from './collections/Users'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+function resolveSecret() {
+  const secret = process.env.PAYLOAD_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV !== 'production') return 'minara-safaris-dev-secret'
+  throw new Error('Missing PAYLOAD_SECRET. Set it in the production environment.')
+}
+
 export default buildConfig({
   admin: {
     user: Users.slug,
   },
   collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads],
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || '',
+  secret: resolveSecret(),
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },

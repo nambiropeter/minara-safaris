@@ -23,6 +23,7 @@ export { ArrowRightIcon as ArrowRight } from "@phosphor-icons/react/dist/ssr/Arr
 export { CalendarBlankIcon as CalendarBlank } from "@phosphor-icons/react/dist/ssr/CalendarBlank";
 export { CheckIcon as Check } from "@phosphor-icons/react/dist/ssr/Check";
 export { ListIcon as List } from "@phosphor-icons/react/dist/ssr/List";
+export { MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 export { MapPinIcon as MapPin } from "@phosphor-icons/react/dist/ssr/MapPin";
 export { MoonIcon as Moon } from "@phosphor-icons/react/dist/ssr/Moon";
 export { SunIcon as Sun } from "@phosphor-icons/react/dist/ssr/Sun";

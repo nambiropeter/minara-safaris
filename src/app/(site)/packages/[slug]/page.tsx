@@ -22,7 +22,11 @@ export async function generateStaticParams() {
   return packages.map((pkg) => ({ slug: pkg.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/packages/[slug]">): Promise<Metadata> {
+type RouteProps = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { slug } = await params;
   const pkg = await getPackageBySlug(slug);
   if (!pkg) return {};
@@ -33,7 +37,7 @@ export async function generateMetadata({ params }: PageProps<"/packages/[slug]">
   };
 }
 
-export default async function PackageDetailPage({ params }: PageProps<"/packages/[slug]">) {
+export default async function PackageDetailPage({ params }: RouteProps) {
   const { slug } = await params;
   const pkg = await getPackageBySlug(slug);
   if (!pkg) notFound();

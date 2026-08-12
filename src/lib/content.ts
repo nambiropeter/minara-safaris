@@ -1,7 +1,7 @@
 import configPromise from "@payload-config";
 import { getPayload } from "payload";
 
-import type { Destination, Media, Package } from "@/payload-types";
+import type { Article, Destination, Media, Package, Page } from "@/payload-types";
 
 /**
  * Server-side reads go straight through Payload's local API — no REST hop
@@ -46,6 +46,28 @@ export async function getDestinations(limit = 8): Promise<Destination[]> {
     depth: 1,
   });
   return docs;
+}
+
+export async function getAllDestinations(): Promise<Destination[]> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "destinations",
+    sort: "name",
+    limit: 200,
+    depth: 1,
+  });
+  return docs;
+}
+
+export async function getDestinationBySlug(slug: string): Promise<Destination | null> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "destinations",
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 1,
+  });
+  return docs[0] ?? null;
 }
 
 /** Payload returns `number | Media` depending on depth; narrow it in one place. */
@@ -103,11 +125,72 @@ export async function getPublishedPackages(): Promise<Package[]> {
   return docs;
 }
 
+export async function getPackagesForDestination(
+  destinationSlug: string,
+  limit = 12,
+): Promise<Package[]> {
+  const all = await getPublishedPackages();
+  return all
+    .filter((pkg) =>
+      (pkg.destinations ?? []).some(
+        (entry) => asDestination(entry.destination)?.slug === destinationSlug,
+      ),
+    )
+    .slice(0, limit);
+}
+
+export async function getPublishedArticles(limit = 100): Promise<Article[]> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "articles",
+    sort: "-publishedAt",
+    limit,
+    depth: 1,
+  });
+  return docs;
+}
+
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "articles",
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 1,
+  });
+  return docs[0] ?? null;
+}
+
+export type PublicPageSlug = Page["slug"];
+
+export async function getPublicPages(): Promise<Page[]> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "pages",
+    sort: "slug",
+    limit: 20,
+    depth: 0,
+  });
+  return docs;
+}
+
+export async function getPublicPageBySlug(slug: PublicPageSlug): Promise<Page | null> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 0,
+  });
+  return docs[0] ?? null;
+}
+
 export type PackageFilters = {
   destination?: string;
   tag?: string;
   duration?: "short" | "medium" | "long";
   budget?: "low" | "mid" | "high";
+  query?: string;
 };
 
 export type PackageSort = "featured" | "price-asc" | "price-desc" | "duration-asc";
@@ -126,6 +209,7 @@ const BUDGET_RANGES: Record<NonNullable<PackageFilters["budget"]>, [number, numb
 };
 
 export function filterPackages(packages: Package[], filters: PackageFilters): Package[] {
+  const query = filters.query?.trim().toLowerCase();
   return packages.filter((pkg) => {
     if (filters.destination) {
       const inDestination = (pkg.destinations ?? []).some(
@@ -141,6 +225,18 @@ export function filterPackages(packages: Package[], filters: PackageFilters): Pa
     if (filters.budget) {
       const [min, max] = BUDGET_RANGES[filters.budget];
       if (pkg.priceFrom < min || pkg.priceFrom > max) return false;
+    }
+    if (query) {
+      const haystack = [
+        pkg.title,
+        pkg.summary,
+        pkg.slug,
+        ...(pkg.tags ?? []),
+        ...destinationNames(pkg),
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
     }
     return true;
   });
