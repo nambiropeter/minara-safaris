@@ -44,31 +44,31 @@ function Hero() {
       src: "/images/bush-camp-tent.jpg",
       alt: "Luxury bush camp tent nestled in wild foliage",
       location: "Luxury Bush Camp",
-      className: "top-[4%] left-[2%] w-[42%] h-[44%] z-0 -rotate-6 shadow-md hover:-rotate-2",
+      className: "top-[4%] left-[2%] w-[42%] aspect-[4/3] z-0 -rotate-6 shadow-md hover:-rotate-2",
     },
     {
       src: "/images/diani-coast.jpg",
       alt: "Sunny Kenyan coast with palm trees and ocean views",
       location: "Diani Beach",
-      className: "top-[2%] right-[2%] w-[44%] h-[48%] z-10 rotate-4 shadow-lg hover:rotate-1",
+      className: "top-[2%] right-[2%] w-[44%] aspect-[4/3] z-10 rotate-4 shadow-lg hover:rotate-1",
     },
     {
       src: "/images/elephant-amboseli.jpg",
       alt: "An elephant walking in Amboseli Park",
       location: "Amboseli",
-      className: "bottom-[2%] left-[4%] w-[45%] h-[46%] z-10 -rotate-3 shadow-lg hover:rotate-0",
+      className: "bottom-[2%] left-[4%] w-[45%] aspect-[4/3] z-10 -rotate-3 shadow-lg hover:rotate-0",
     },
     {
       src: "/images/zebra-herd-savanna.jpg",
       alt: "A herd of zebra crossing dry golden grassland",
       location: "Savanna Plains",
-      className: "bottom-[4%] right-[2%] w-[43%] h-[45%] z-0 rotate-6 shadow-md hover:rotate-2",
+      className: "bottom-[4%] right-[2%] w-[43%] aspect-[4/3] z-0 rotate-6 shadow-md hover:rotate-2",
     },
     {
       src: "/images/cheetah-mara-game-drive.jpg",
       alt: "A cheetah sits in long grass while safari vehicles wait on the horizon",
       location: "Maasai Mara",
-      className: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[54%] h-[72%] z-20 shadow-2xl hover:rotate-0",
+      className: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[54%] aspect-[3/4] z-20 shadow-2xl hover:rotate-0",
       priority: true,
     },
   ];
@@ -81,8 +81,7 @@ function Hero() {
         </h1>
         <p className="measure mt-6 text-lead text-muted-foreground">
           Browse the trips we book most, then message the consultant who&rsquo;ll
-          plan yours. Every package shows what the price includes and what it
-          doesn&rsquo;t, with resident rates alongside.
+          plan yours.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button render={<Link href="/packages" />} size="cta">

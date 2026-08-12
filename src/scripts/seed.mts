@@ -25,7 +25,8 @@ const images = [
   { file: 'safari-vehicle-acacia-woodland.jpg', alt: 'An open safari vehicle parked among acacia trees' },
   { file: 'diani-coast.jpg', alt: 'Sunny Kenyan Coast with some makeshift structures'},
   { file: 'maasai-mara.jpg', alt: 'Wildebeest grazing in the Maasai Mara Game reserve during migration'},
-  { file: 'elephant-amboseli.jpg', alt: 'An elephant walking in Amboseli Park'}
+  { file: 'elephant-amboseli.jpg', alt: 'An elephant walking in Amboseli Park'},
+  { file: 'flamingoes-nakuru.jpg', alt: 'Flamingoes at Lake Naivasha'}
 ] as const
 
 const destinations = [
@@ -105,7 +106,7 @@ const packages: SeedPackage[] = [
     summary: 'The Mara for the plains game, Nakuru for rhino and flamingo, with the Rift Valley escarpment in between.',
     destinations: ['maasai-mara'],
     tags: ['safari', 'rift valley'],
-    image: 3,
+    image: 7,
     isFeatured: true,
     itinerary: [
       { day: 1, title: 'Nairobi to Lake Nakuru', description: 'Down the escarpment with a stop at the viewpoint, afternoon drive in the park.' },
