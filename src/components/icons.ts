@@ -21,6 +21,7 @@
  */
 export { ArrowRightIcon as ArrowRight } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 export { CalendarBlankIcon as CalendarBlank } from "@phosphor-icons/react/dist/ssr/CalendarBlank";
+export { CheckIcon as Check } from "@phosphor-icons/react/dist/ssr/Check";
 export { ListIcon as List } from "@phosphor-icons/react/dist/ssr/List";
 export { MapPinIcon as MapPin } from "@phosphor-icons/react/dist/ssr/MapPin";
 export { MoonIcon as Moon } from "@phosphor-icons/react/dist/ssr/Moon";

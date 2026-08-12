@@ -71,6 +71,27 @@ export function destinationNames(pkg: Package): string[] {
     .filter((name): name is string => Boolean(name));
 }
 
+export async function getPackageBySlug(slug: string): Promise<Package | null> {
+  const payload = await client();
+  const { docs } = await payload.find({
+    collection: "packages",
+    where: { slug: { equals: slug }, isPublished: { equals: true } },
+    limit: 1,
+    depth: 2,
+  });
+  return docs[0] ?? null;
+}
+
+/** Same primary destination, different package — the catalogue is small enough that "related" just means "elsewhere in it". */
+export async function getRelatedPackages(pkg: Package, limit = 3): Promise<Package[]> {
+  const slugs = destinationNames(pkg);
+  if (slugs.length === 0) return [];
+  const all = await getPublishedPackages();
+  return all
+    .filter((other) => other.id !== pkg.id && destinationNames(other).some((name) => slugs.includes(name)))
+    .slice(0, limit);
+}
+
 export async function getPublishedPackages(): Promise<Package[]> {
   const payload = await client();
   const { docs } = await payload.find({
