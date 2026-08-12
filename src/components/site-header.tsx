@@ -2,21 +2,47 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { List, X } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
-import { Button } from "@/components/ui/button";
 import { nav, site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsScrolled(!entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  const activeHeader = isScrolled || open;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-sm">
+    <>
+      <div ref={sentinelRef} className="absolute top-0 inset-x-0 h-px pointer-events-none" aria-hidden="true" />
+      <header
+        className={cn(
+          "sticky top-0 z-40 transition-[background-color,border-color,box-shadow] duration-350 ease-out",
+          activeHeader
+            ? "border-b border-border bg-background/85 backdrop-blur-md backdrop-saturate-150 shadow-[0_1px_24px_rgba(0,0,0,0.05)]"
+            : "border-b border-transparent bg-transparent shadow-none",
+        )}
+      >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-5 sm:h-20 sm:px-8">
         <Link
           href="/"
@@ -27,7 +53,7 @@ export function SiteHeader() {
         </Link>
 
         <nav aria-label="Main" className="ml-auto hidden lg:block">
-          <ul className="flex items-center gap-7">
+          <ul className="flex items-center gap-6">
             {nav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
@@ -36,8 +62,13 @@ export function SiteHeader() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "text-sm transition-colors hover:text-foreground",
-                      active ? "text-foreground" : "text-muted-foreground",
+                      "relative inline-flex items-center px-1.5 py-1 text-sm font-medium transition-colors duration-200",
+                      "after:absolute after:bottom-0 after:left-1.5 after:right-1.5 after:h-[2px] after:rounded-[1px] after:bg-primary",
+                      "after:origin-left after:transition-transform after:duration-300 after:ease-[cubic-bezier(0.16,1,0.3,1)]",
+                      "hover:text-foreground focus-visible:text-foreground [&:hover::after]:scale-x-100 [&:focus-visible::after]:scale-x-100",
+                      active
+                        ? "text-primary [&::after]:scale-x-100"
+                        : "text-muted-foreground [&::after]:scale-x-0",
                     )}
                   >
                     {item.label}
@@ -48,20 +79,32 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 lg:ml-4">
+        <div className="ml-auto flex items-center gap-2 lg:ml-4">
           <ThemeToggle />
           <WhatsAppCta size="default" label="WhatsApp" className="hidden lg:inline-flex" />
-          <Button
-            variant="ghost"
-            size="icon-lg"
-            className="size-11 lg:hidden"
+          <button
+            type="button"
+            className="flex size-11 items-center justify-center rounded-full border border-border/80 text-foreground transition-colors hover:border-primary hover:bg-muted/50 lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? <X className="size-5" /> : <List className="size-5" />}
-          </Button>
+            <span className="grid w-[18px] gap-[5px]" aria-hidden="true">
+              <span
+                className={cn(
+                  "block h-[2px] w-full rounded-[1px] bg-current transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  open && "translate-y-[3.5px] rotate-45",
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-[2px] w-full rounded-[1px] bg-current transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  open && "-translate-y-[3.5px] -rotate-45",
+                )}
+              />
+            </span>
+          </button>
         </div>
       </div>
 
@@ -69,23 +112,33 @@ export function SiteHeader() {
         <nav
           id="mobile-nav"
           aria-label="Main"
-          className="border-t border-border bg-background lg:hidden"
+          className="border-t border-border bg-background shadow-lg max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain lg:hidden"
         >
           <ul className="mx-auto w-full max-w-6xl px-5 py-2 sm:px-8">
-            {nav.map((item) => (
-              <li key={item.href} className="border-b border-border last:border-b-0">
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="flex min-h-12 items-center text-base"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+            {nav.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <li key={item.href} className="border-b border-border last:border-b-0">
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex min-h-12 items-center text-base py-3 transition-colors",
+                      active
+                        ? "border-l-2 border-primary pl-3 font-semibold text-primary"
+                        : "text-muted-foreground hover:text-foreground px-1",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       )}
     </header>
+    </>
   );
 }

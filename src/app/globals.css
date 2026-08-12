@@ -163,12 +163,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
-    /* Newsreader and Figtree both ship an optical-size axis; letting the browser
-       apply it is why headings stay sturdy and long-form stays open. */
     font-optical-sizing: auto;
   }
   h1,
@@ -179,12 +179,6 @@
   }
   p {
     text-wrap: pretty;
-  }
-  /* Light-on-dark loses apparent weight; give it back on all three axes rather
-     than only bumping the colour. */
-  .dark body {
-    letter-spacing: 0.006em;
-    -webkit-font-smoothing: antialiased;
   }
 }
 
