@@ -39,11 +39,45 @@ export default async function HomePage() {
  * image leads and the headline sits beneath it, on desktop it bleeds off the right.
  */
 function Hero() {
+  const moodboardItems = [
+    {
+      src: "/images/bush-camp-tent.jpg",
+      alt: "Luxury bush camp tent nestled in wild foliage",
+      location: "Luxury Bush Camp",
+      className: "top-[4%] left-[2%] w-[42%] h-[44%] z-0 -rotate-6 shadow-md hover:-rotate-2",
+    },
+    {
+      src: "/images/diani-coast.jpg",
+      alt: "Sunny Kenyan coast with palm trees and ocean views",
+      location: "Diani Beach",
+      className: "top-[2%] right-[2%] w-[44%] h-[48%] z-10 rotate-4 shadow-lg hover:rotate-1",
+    },
+    {
+      src: "/images/elephant-amboseli.jpg",
+      alt: "An elephant walking in Amboseli Park",
+      location: "Amboseli",
+      className: "bottom-[2%] left-[4%] w-[45%] h-[46%] z-10 -rotate-3 shadow-lg hover:rotate-0",
+    },
+    {
+      src: "/images/zebra-herd-savanna.jpg",
+      alt: "A herd of zebra crossing dry golden grassland",
+      location: "Savanna Plains",
+      className: "bottom-[4%] right-[2%] w-[43%] h-[45%] z-0 rotate-6 shadow-md hover:rotate-2",
+    },
+    {
+      src: "/images/cheetah-mara-game-drive.jpg",
+      alt: "A cheetah sits in long grass while safari vehicles wait on the horizon",
+      location: "Maasai Mara",
+      className: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[54%] h-[72%] z-20 shadow-2xl hover:rotate-0",
+      priority: true,
+    },
+  ];
+
   return (
-    <section className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-14 lg:grid lg:grid-cols-12 lg:gap-12 lg:pt-20 lg:pb-28">
-      <div className="lg:col-span-6 lg:self-center">
+    <section className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-14 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10 lg:pt-16 lg:pb-24">
+      <div className="lg:col-span-5">
         <h1 className="text-display">
-          Safaris across Kenya and East Africa, planned over a conversation.
+          Safaris across Kenya and East Africa.
         </h1>
         <p className="measure mt-6 text-lead text-muted-foreground">
           Browse the trips we book most, then message the consultant who&rsquo;ll
@@ -59,15 +93,26 @@ function Hero() {
         </div>
       </div>
 
-      <div className="relative mt-10 aspect-[3/4] overflow-hidden rounded-2xl bg-muted sm:aspect-[4/3] lg:col-span-6 lg:mt-0 lg:aspect-[3/4]">
-        <Image
-          src="/images/cheetah-mara-game-drive.jpg"
-          alt="A cheetah sits in long grass while safari vehicles wait on the horizon"
-          fill
-          priority
-          sizes="(min-width: 1024px) 48vw, 92vw"
-          className="object-cover"
-        />
+      <div className="relative mt-12 h-[440px] sm:h-[500px] lg:col-span-7 lg:mt-0 lg:h-[560px]">
+        {moodboardItems.map((item, i) => (
+          <div
+            key={i}
+            className={`group absolute overflow-hidden rounded-2xl border border-white/20 bg-muted transition-all duration-500 ease-out hover:z-30 hover:scale-105 hover:shadow-2xl ${item.className}`}
+          >
+            <Image
+              src={item.src}
+              alt={item.alt}
+              fill
+              priority={item.priority}
+              sizes="(min-width: 1024px) 35vw, 90vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-75 transition-opacity group-hover:opacity-90" />
+            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center rounded-full bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md transition-colors group-hover:bg-black/70 sm:bottom-3 sm:left-3">
+              {item.location}
+            </span>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -132,8 +177,7 @@ function Featured({ packages }: { packages: Awaited<ReturnType<typeof getFeature
         href={packages.length > 0 ? "/packages" : undefined}
         linkLabel="All packages"
       >
-        Fixed itineraries with published prices. Any of them can be changed —
-        that conversation is the point.
+        Fixed itineraries with published prices.
       </SectionHeading>
 
       {packages.length > 0 ? (
