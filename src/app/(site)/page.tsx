@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { ArrowRight, MagnifyingGlass } from "@/components/icons";
+import { ArrowRight } from "@/components/icons";
+import { DestinationCard } from "@/components/destination-card";
 import { PackageCard } from "@/components/package-card";
+import { SearchEntryBar } from "@/components/search-entry-bar";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { Button } from "@/components/ui/button";
 import {
-  asMedia,
   getDestinations,
   getFeaturedPackages,
   getOfferPackages,
@@ -39,68 +40,6 @@ function SearchEntrySection() {
     <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8 sm:pt-8">
       <SearchEntryBar />
     </section>
-  );
-}
-
-function SearchEntryBar() {
-  const tabs = [
-    { key: "safaris", label: "Safaris & Tours", href: "/packages", active: true },
-    { key: "hotels", label: "Hotels", href: "/contact", active: false },
-    { key: "custom", label: "Custom Trip", href: "/contact", active: false },
-  ] as const;
-
-  const suggestedLinks = [
-    { label: "Maasai Mara", href: "/destinations/maasai-mara" },
-    { label: "Diani Beach", href: "/destinations/diani-beach" },
-    { label: "Amboseli", href: "/destinations/amboseli" },
-  ];
-
-  return (
-    <div className="rounded-3xl border border-border bg-secondary/40 p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap gap-2 rounded-2xl bg-background p-1 ring-1 ring-border">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.key}
-            render={<Link href={tab.href} />}
-            variant={tab.active ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 justify-center rounded-xl"
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
-      <form action="/packages" method="get" className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-        <label className="flex h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-muted-foreground shadow-sm">
-          <MagnifyingGlass className="size-4 shrink-0" />
-          <input
-            name="q"
-            placeholder="Search destination, trip style, or keyword"
-            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </label>
-        <Button size="cta" type="submit">
-          Search trips
-          <ArrowRight />
-        </Button>
-      </form>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span className="text-label uppercase tracking-[0.2em] text-muted-foreground">
-          Quick picks
-        </span>
-        {suggestedLinks.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-full bg-background px-3 py-1.5 text-foreground ring-1 ring-border transition-colors hover:bg-muted"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -284,35 +223,11 @@ function Destinations({
         borders are ordinary here, not an upgrade.
       </SectionHeading>
 
-      <ul className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {destinations.map((destination) => {
-          const cover = asMedia(destination.coverImage);
-          return (
-            <li key={destination.id} className="group relative">
-              <Link
-                href={`/destinations/${destination.slug}`}
-                className="block overflow-hidden rounded-xl"
-              >
-                <div className="relative aspect-[3/4] bg-muted">
-                  {cover?.url && (
-                    <Image
-                      src={cover.url}
-                      alt={cover.alt}
-                      fill
-                      sizes="(min-width: 1024px) 22vw, 45vw"
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <p className="absolute inset-x-0 bottom-0 p-4 font-heading text-heading text-white">
-                    {destination.name}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+        {destinations.map((destination) => (
+          <DestinationCard key={destination.id} destination={destination} />
+        ))}
+      </div>
     </section>
   );
 }

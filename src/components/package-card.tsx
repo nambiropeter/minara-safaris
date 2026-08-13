@@ -7,9 +7,8 @@ import { coverImage, destinationNames } from "@/lib/content";
 import type { Package } from "@/payload-types";
 
 /**
- * The catalogue's atom. Home is where it first appears; the catalogue,
- * destination pages and related-package rails all reuse it, so the shape is
- * decided here once.
+ * The catalogue's atom. Home is where it first appears; the catalogue and
+ * related-package rails reuse it, so the shape is decided here once.
  */
 export function PackageCard({ pkg }: { pkg: Package }) {
   const cover = coverImage(pkg);
