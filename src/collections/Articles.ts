@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { seoField } from '../fields/seo.mts'
+import { slugField } from '../fields/slug.mts'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -10,7 +11,7 @@ export const Articles: CollectionConfig = {
   },
   fields: [
     { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    slugField('title'),
     { name: 'excerpt', type: 'textarea', required: true },
     { name: 'body', type: 'richText', required: true },
     { name: 'coverImage', type: 'upload', relationTo: 'media', required: true },

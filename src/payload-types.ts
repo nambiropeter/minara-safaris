@@ -178,6 +178,9 @@ export interface Media {
 export interface Destination {
   id: number;
   name: string;
+  /**
+   * Auto-filled from name if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
   overview?: {
     root: {
@@ -209,6 +212,9 @@ export interface Destination {
 export interface Package {
   id: number;
   title: string;
+  /**
+   * Auto-filled from title if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
   durationDays: number;
   priceFrom: number;
@@ -290,6 +296,9 @@ export interface Package {
 export interface Article {
   id: number;
   title: string;
+  /**
+   * Auto-filled from title if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
   excerpt: string;
   body: {
