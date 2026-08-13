@@ -8,7 +8,7 @@
 
 export const site = {
   name: "Minara Safaris",
-  tagline: "Kenyan safaris and East African tours",
+  tagline: "Ask first. Travel after.",
   /** Unconfirmed. Set NEXT_PUBLIC_WHATSAPP_NUMBER (digits only, country code, no +). */
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
 } as const;

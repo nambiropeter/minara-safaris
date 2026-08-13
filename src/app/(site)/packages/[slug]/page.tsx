@@ -1,9 +1,11 @@
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { CtaBanner } from "@/components/cta-banner";
 import { Check, MapPin, X } from "@/components/icons";
+import { ImageLightbox } from "@/components/image-lightbox";
 import { PackageCard } from "@/components/package-card";
 import { PriceBlock } from "@/components/price-block";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
@@ -60,8 +62,11 @@ export default async function PackageDetailPage({ params }: RouteProps) {
   };
 
   return (
+    <>
     <main className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <Breadcrumbs items={[{ label: "Packages", href: "/packages" }, { label: pkg.title }]} />
 
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -80,19 +85,9 @@ export default async function PackageDetailPage({ params }: RouteProps) {
           </ul>
 
           {images.length > 0 && (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {images.map((image) => (
-                <div key={image.id} className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
-                  <Image
-                    src={image.url ?? ""}
-                    alt={image.alt}
-                    fill
-                    sizes="(min-width: 640px) 30vw, 45vw"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
+            <ImageLightbox
+              images={images.map((image) => ({ id: image.id, url: image.url ?? "", alt: image.alt }))}
+            />
           )}
 
           <p className="measure mt-6 text-lead text-muted-foreground">{pkg.summary}</p>
@@ -171,5 +166,14 @@ export default async function PackageDetailPage({ params }: RouteProps) {
         </section>
       )}
     </main>
+
+    <CtaBanner
+      title="Ready to plan this trip?"
+      description="Send the dates and party size to a consultant on WhatsApp — no forms, no accounts, just a straight answer on availability and price."
+      whatsappContext={pkg.title}
+      secondaryHref="/packages"
+      secondaryLabel="Browse more packages"
+    />
+    </>
   );
 }

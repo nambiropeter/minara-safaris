@@ -151,7 +151,7 @@ function SectionHeading({
           href={href}
           className="group flex items-center gap-1.5 text-sm font-medium text-primary"
         >
-          {linkLabel}
+          <span className="link-underline">{linkLabel}</span>
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       )}

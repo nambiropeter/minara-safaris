@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { CtaBanner } from "@/components/cta-banner";
 import { asMedia, getArticleBySlug } from "@/lib/content";
 
 export const revalidate = 300;
@@ -38,7 +40,10 @@ export default async function ArticlePage({ params }: RouteProps) {
   const date = publishedDate(article.publishedAt);
 
   return (
+    <>
     <main className="mx-auto w-full max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
+      <Breadcrumbs items={[{ label: "Journal", href: "/journal" }, { label: article.title }]} />
+
       {date && <p className="text-label text-muted-foreground">{date}</p>}
       <h1 className="mt-2 text-display">{article.title}</h1>
       <p className="measure mt-4 text-lead text-muted-foreground">{article.excerpt}</p>
@@ -60,5 +65,14 @@ export default async function ArticlePage({ params }: RouteProps) {
         <RichText data={article.body} />
       </article>
     </main>
+
+    <CtaBanner
+      title="Ready to turn this into a trip?"
+      description="Send a consultant your dates on WhatsApp and we'll help you plan it."
+      whatsappContext={article.title}
+      secondaryHref="/journal"
+      secondaryLabel="More from the journal"
+    />
+    </>
   );
 }
