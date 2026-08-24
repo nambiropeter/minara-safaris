@@ -7,6 +7,7 @@ import {
   getPublicPages,
   type PublicPageSlug,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -41,6 +42,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   return {
     title: page.seo?.title || page.title,
     description: page.seo?.description,
+    ...canonical(`/${page.slug}`),
   };
 }
 

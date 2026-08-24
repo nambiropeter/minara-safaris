@@ -4,12 +4,14 @@ import Link from "next/link";
 
 import { ArrowRight } from "@/components/icons";
 import { asMedia, getPublishedArticles } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Journal",
   description: "Practical safari planning guides, destination ideas, and trip notes.",
+  ...canonical("/journal"),
 };
 
 function publishedDate(value: string | null | undefined): string | null {

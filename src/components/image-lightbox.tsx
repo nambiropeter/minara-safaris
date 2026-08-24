@@ -37,6 +37,7 @@ export function ImageLightbox({ images }: { images: LightboxImage[] }) {
               src={image.url}
               alt={image.alt}
               fill
+              priority={i === 0}
               sizes="(min-width: 640px) 30vw, 45vw"
               className="object-cover"
             />

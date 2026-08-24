@@ -1,5 +1,6 @@
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -16,6 +17,7 @@ import {
   getPublishedPackages,
   getRelatedPackages,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -36,6 +38,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   return {
     title: pkg.seo?.title || pkg.title,
     description: pkg.seo?.description || pkg.summary,
+    ...canonical(`/packages/${pkg.slug}`),
   };
 }
 
@@ -151,6 +154,12 @@ export default async function PackageDetailPage({ params }: RouteProps) {
           <div className="rounded-xl border border-border p-6">
             <PriceBlock pkg={pkg} size="detail" />
             <WhatsAppCta context={pkg.title} slug={pkg.slug} className="mt-6 w-full" />
+            <Link
+              href={`/contact?package=${pkg.id}`}
+              className="link-underline mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              Or send an enquiry
+            </Link>
           </div>
         </aside>
       </div>
@@ -169,7 +178,7 @@ export default async function PackageDetailPage({ params }: RouteProps) {
 
     <CtaBanner
       title="Ready to plan this trip?"
-      description="Send the dates and party size to a consultant on WhatsApp — no forms, no accounts, just a straight answer on availability and price."
+      description="Send the dates and party size to a consultant on WhatsApp - no forms, no accounts, just a straight answer on availability and price."
       whatsappContext={pkg.title}
       secondaryHref="/packages"
       secondaryLabel="Browse more packages"

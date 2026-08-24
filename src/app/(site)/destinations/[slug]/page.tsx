@@ -12,6 +12,7 @@ import {
   getDestinationBySlug,
   getPackagesForDestination,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     description:
       destination.seo?.description ||
       `Safari packages and trip ideas for ${destination.name}.`,
+    ...canonical(`/destinations/${destination.slug}`),
   };
 }
 

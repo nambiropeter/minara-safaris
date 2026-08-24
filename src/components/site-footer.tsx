@@ -19,7 +19,7 @@ export function SiteFooter() {
             <p className="mt-1 text-sm text-muted-foreground italic">{site.tagline}</p>
             <p className="mt-4 text-sm text-muted-foreground">
               Safari and tour packages across Kenya and East Africa. Every trip
-              is planned with a consultant — we don&rsquo;t sell anything you
+              is planned with a consultant - we don&rsquo;t sell anything you
               can&rsquo;t ask a question about first.
             </p>
             <WhatsAppCta label="Chat with a consultant" className="mt-6" />

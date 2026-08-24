@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import type { Package } from "@/payload-types";
 
 type Props = {
@@ -21,6 +22,10 @@ export function EnquiryForm({ packages }: Props) {
   const [startedAt] = useState(() => Date.now());
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  /** Preselects the package when arriving via a package page's "Send an enquiry" link (`?package=<id>`). */
+  const [preselectedPackage] = useState(() =>
+    typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("package") ?? "") : "",
+  );
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +64,7 @@ export function EnquiryForm({ packages }: Props) {
         return;
       }
       setStatus("done");
+      trackEvent("form_submit", { package: typeof body.package === "string" ? body.package : undefined });
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
       setStatus("error");
@@ -110,7 +116,7 @@ export function EnquiryForm({ packages }: Props) {
       {packages.length > 0 && (
         <label className="flex flex-col gap-1 text-label text-muted-foreground">
           Package (optional)
-          <select name="package" defaultValue="" className={inputClass}>
+          <select name="package" defaultValue={preselectedPackage} className={inputClass}>
             <option value="">Not sure yet</option>
             {packages.map((pkg) => (
               <option key={pkg.id} value={pkg.id}>

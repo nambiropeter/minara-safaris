@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CtaBanner } from "@/components/cta-banner";
 import { asMedia, getArticleBySlug } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -28,6 +29,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   return {
     title: article.seo?.title || article.title,
     description: article.seo?.description || article.excerpt,
+    ...canonical(`/journal/${article.slug}`),
   };
 }
 

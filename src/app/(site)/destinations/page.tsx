@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 
 import { DestinationCard } from "@/components/destination-card";
 import { getAllDestinations } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Destinations",
   description: "Explore safari and coast destinations across Kenya and East Africa.",
+  ...canonical("/destinations"),
 };
 
 export default async function DestinationsPage() {
@@ -25,6 +27,7 @@ export default async function DestinationsPage() {
 
       {destinations.length > 0 ? (
         <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="sr-only">Results</h2>
           {destinations.map((destination) => (
             <DestinationCard key={destination.id} destination={destination} />
           ))}

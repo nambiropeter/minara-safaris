@@ -324,16 +324,17 @@ Content modelling and CMS config, public page templates, lead form + notificatio
 
 Keep a running list here as the client raises features from the original spec, rather than re-litigating scope each time:
 
-- Booking/checkout engine, payments (Stripe + M-Pesa)
+- Booking/checkout engine, payments (Flutterwave/Paystack covering card + M-Pesa) — draft-scoped, see `docs/PHASE-2-QUOTE.md`
 - Travel wallet
 - Park fee automation, permits
 - Hotel search / aggregated inventory
-- Mobile app
 - Agent/supplier portals
 - Reviews, loyalty, referrals
-- Live chat widget
+- Live chat widget (third-party embed, not custom-built)
 - Multi-currency, multi-language
 - Granular staff roles and permissions
+
+**Dropped from the roadmap entirely, not deferred:** native mobile app. A purchase most travellers make once or twice a year doesn't earn a place on someone's home screen — responsive web already covers the need without install friction or a second codebase.
 
 ## 10. Open Questions & Dependencies
 

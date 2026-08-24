@@ -11,7 +11,7 @@ export const Destinations: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     slugField('name'),
-    { name: 'overview', type: 'richText' },
+    { name: 'overview', type: 'richText', admin: { description: 'Shown on the destination page above the list of packages that visit it.' } },
     { name: 'coverImage', type: 'upload', relationTo: 'media' },
     seoField,
   ],

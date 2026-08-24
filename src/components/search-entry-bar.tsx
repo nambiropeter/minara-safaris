@@ -34,7 +34,7 @@ export function SearchEntryBar() {
       </div>
 
       <form action="/packages" method="get" className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-        <label className="flex h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-muted-foreground">
+        <label className="flex h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <MagnifyingGlass className="size-4 shrink-0" />
           <input
             name="q"

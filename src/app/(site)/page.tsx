@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,8 +13,11 @@ import {
   getFeaturedPackages,
   getOfferPackages,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = canonical("/");
 
 export default async function HomePage() {
   const [featured, offers, destinations] = await Promise.all([
@@ -49,43 +53,37 @@ function SearchEntrySection() {
  * image leads and the headline sits beneath it, on desktop it bleeds off the right.
  */
 function Hero() {
-  const bentoItems = [
-    {
-      src: "/images/cheetah-mara-game-drive.jpg",
-      alt: "A cheetah sits in long grass while safari vehicles wait on the horizon",
-      location: "Maasai Mara",
-      className: "col-span-4 row-span-7 aspect-[3/4]",
-      priority: true,
-    },
+  const moodboardItems = [
     {
       src: "/images/bush-camp-tent.jpg",
       alt: "Luxury bush camp tent nestled in wild foliage",
       location: "Luxury Bush Camp",
-      className: "col-span-4 row-span-5 aspect-[4/3]",
+      className: "top-[4%] left-[2%] w-[42%] aspect-[4/3] z-0 -rotate-6 shadow-md hover:-rotate-2",
     },
     {
       src: "/images/diani-coast.jpg",
       alt: "Sunny Kenyan coast with palm trees and ocean views",
       location: "Diani Beach",
-      className: "col-span-4 row-span-7 aspect-[3/4]",
-    },
-    {
-      src: "/images/flamingoes-nakuru.jpg",
-      alt: "Pink flamingoes gathered at Lake Nakuru shore",
-      location: "Lake Nakuru",
-      className: "col-span-4 row-span-5 aspect-[4/3]",
+      className: "top-[2%] right-[2%] w-[44%] aspect-[4/3] z-10 rotate-4 shadow-lg hover:rotate-1",
     },
     {
       src: "/images/elephant-amboseli.jpg",
       alt: "An elephant walking in Amboseli Park",
       location: "Amboseli",
-      className: "col-span-4 row-span-7 aspect-[3/4]",
+      className: "bottom-[2%] left-[4%] w-[45%] aspect-[4/3] z-10 -rotate-3 shadow-lg hover:rotate-0",
     },
     {
-      src: "/images/safari-vehicle-acacia-woodland.jpg",
-      alt: "An open safari vehicle parked among acacia trees",
-      location: "Savanna Game Drive",
-      className: "col-span-4 row-span-5 aspect-[4/3]",
+      src: "/images/zebra-herd-savanna.jpg",
+      alt: "A herd of zebra crossing dry golden grassland",
+      location: "Savanna Plains",
+      className: "bottom-[4%] right-[2%] w-[43%] aspect-[4/3] z-0 rotate-6 shadow-md hover:rotate-2",
+    },
+    {
+      src: "/images/cheetah-mara-game-drive.jpg",
+      alt: "A cheetah sits in long grass while safari vehicles wait on the horizon",
+      location: "Maasai Mara",
+      className: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[54%] aspect-[3/4] z-20 shadow-2xl hover:rotate-0",
+      priority: true,
     },
   ];
 
@@ -108,22 +106,22 @@ function Hero() {
         </div>
       </div>
 
-      <div className="mt-10 grid h-[460px] grid-cols-12 grid-rows-12 gap-2.5 sm:h-[500px] sm:gap-3 lg:col-span-7 lg:mt-0 lg:h-[540px]">
-        {bentoItems.map((item, i) => (
+      <div className="relative mt-12 h-[440px] sm:h-[500px] lg:col-span-7 lg:mt-0 lg:h-[560px]">
+        {moodboardItems.map((item, i) => (
           <div
             key={i}
-            className={`group relative overflow-hidden rounded-2xl border border-border/40 bg-muted transition-all duration-300 hover:border-primary/40 hover:shadow-xl ${item.className}`}
+            className={`group absolute overflow-hidden rounded-2xl border border-white/20 bg-muted transition-all duration-500 ease-out hover:z-30 hover:scale-105 hover:shadow-2xl ${item.className}`}
           >
             <Image
               src={item.src}
               alt={item.alt}
               fill
               priority={item.priority}
-              sizes="(min-width: 1024px) 25vw, 45vw"
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              sizes="(min-width: 1024px) 35vw, 90vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-85" />
-            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center rounded-full bg-black/45 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md transition-colors group-hover:bg-black/65 sm:bottom-3 sm:left-3">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-75 transition-opacity group-hover:opacity-90" />
+            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center rounded-full bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md transition-colors group-hover:bg-black/70 sm:bottom-3 sm:left-3">
               {item.location}
             </span>
           </div>
@@ -171,7 +169,7 @@ function Offers({ packages }: { packages: Awaited<ReturnType<typeof getOfferPack
     <section className="border-y border-border bg-secondary/50 py-14 sm:py-20">
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
         <SectionHeading title="On offer now">
-          Reduced for a limited window. The price note still applies — ask us what
+          Reduced for a limited window. The price note still applies - ask us what
           the dates look like before you plan around one.
         </SectionHeading>
         <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">

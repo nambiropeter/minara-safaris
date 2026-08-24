@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { PackageCard } from "@/components/package-card";
 import { PackageFiltersBar } from "@/components/package-filters";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
@@ -10,8 +12,15 @@ import {
   type PackageFilters,
   type PackageSort,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Packages",
+  description: "Fixed safari and tour itineraries across Kenya and East Africa, with published prices.",
+  ...canonical("/packages"),
+};
 
 const SORTS: PackageSort[] = ["featured", "price-asc", "price-desc", "duration-asc"];
 const DURATIONS: PackageFilters["duration"][] = ["short", "medium", "long"];
@@ -49,8 +58,7 @@ export default async function PackagesPage({ searchParams }: PackagesPageProps) 
       <div className="max-w-2xl">
         <h1 className="text-display">Packages</h1>
         <p className="measure mt-4 text-lead text-muted-foreground">
-          Fixed itineraries with published prices. Message the consultant on
-          any package to adjust dates, pace or budget.
+          Fixed itineraries with published prices.
         </p>
       </div>
 
@@ -64,6 +72,7 @@ export default async function PackagesPage({ searchParams }: PackagesPageProps) 
 
       {filtered.length > 0 ? (
         <div className="mt-6 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="sr-only">Results</h2>
           {filtered.map((pkg) => (
             <PackageCard key={pkg.id} pkg={pkg} />
           ))}

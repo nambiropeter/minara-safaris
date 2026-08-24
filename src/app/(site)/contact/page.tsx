@@ -4,12 +4,14 @@ import { EnquiryForm } from "@/components/enquiry-form";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { getPublicPageBySlug, getPublishedPackages } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Contact",
   description: "Send an enquiry and a Minara Safaris consultant will get back to you.",
+  ...canonical("/contact"),
 };
 
 export default async function ContactPage() {
