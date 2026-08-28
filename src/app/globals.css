@@ -209,4 +209,68 @@
   .link-underline[aria-current="page"]::after {
     transform: scaleX(1);
   }
+
+  /* Destination accordion (About page).
+     Layout is hand-written rather than Tailwind `md:` variants so that
+     position/display can't be won by a competing utility, and so the desktop
+     rules live in one place. Cards keep a fixed width and animate only
+     `transform` + `clip-path`; geometry comes in as custom properties from
+     src/lib/accordion-layout.ts. Mobile stays a plain stacked column. */
+  .accordion-track {
+    --accordion-gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .accordion-card {
+    position: relative;
+  }
+
+  @media (width >= 48rem) {
+    .accordion-track {
+      display: block;
+      position: relative;
+      height: 500px;
+    }
+    .accordion-card {
+      position: absolute;
+      inset-block: 0;
+      left: 0;
+      width: var(--accordion-card-w);
+      transform: translateX(var(--card-x));
+      /* `round` keeps the corner radius correct at every clipped width —
+         the reason this uses clip-path instead of scaleX. */
+      clip-path: inset(0 var(--card-hidden) 0 0 round 1rem);
+      transition:
+        transform var(--card-duration) cubic-bezier(0.32, 0.72, 0, 1),
+        clip-path var(--card-duration) cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    /* Shows the photo's middle in the visible sliver instead of its left edge. */
+    .accordion-card-media {
+      transform: translateX(calc(-1 * var(--card-shift)));
+      transition: transform var(--card-duration) cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    /* Text wraps against the visible width, so titles never get cut mid-word.
+       Width is deliberately NOT transitioned: animating it would reflow this
+       box every frame, the exact cost the rest of the component avoids.
+       Instead the re-wrap is hidden — opacity drops instantly (no transition)
+       so the reflow happens while invisible, then fades back in at the new
+       width. Fade out is free, fade in is the animation. */
+    .accordion-card-body {
+      width: calc(100% - var(--card-hidden));
+      transition: opacity 250ms ease-out;
+    }
+    .accordion-card-body[data-rewrapping="true"] {
+      opacity: 0;
+      transition: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .accordion-card,
+    .accordion-card-media,
+    .accordion-card-body {
+      transition-duration: 1ms;
+    }
+  }
 }

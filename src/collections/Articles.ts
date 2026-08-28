@@ -7,7 +7,7 @@ export const Articles: CollectionConfig = {
   access: { read: () => true },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'publishedAt'],
+    defaultColumns: ['title', 'isFeatured', 'publishedAt'],
   },
   fields: [
     { name: 'title', type: 'text', required: true },
@@ -26,15 +26,37 @@ export const Articles: CollectionConfig = {
     },
     { name: 'coverImage', type: 'upload', relationTo: 'media', required: true },
     {
-      name: 'tags',
-      type: 'text',
-      hasMany: true,
-      admin: { description: 'Free-text labels for grouping related articles (not shown to visitors).' },
+      type: 'row',
+      fields: [
+        {
+          name: 'tags',
+          type: 'text',
+          hasMany: true,
+          admin: { description: 'Free-text labels for grouping related articles (e.g. Planning, Wildlife).' },
+        },
+        {
+          name: 'readTimeMinutes',
+          type: 'number',
+          min: 1,
+          admin: { description: 'Estimated read time in minutes (e.g. 5)' },
+        },
+      ],
     },
     {
-      name: 'publishedAt',
-      type: 'date',
-      admin: { description: 'Controls the date shown on the article — does not affect visibility.' },
+      type: 'row',
+      fields: [
+        {
+          name: 'isFeatured',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Features this article prominently in the journal' },
+        },
+        {
+          name: 'publishedAt',
+          type: 'date',
+          admin: { description: 'Controls the date shown on the article — does not affect visibility.' },
+        },
+      ],
     },
     seoField,
   ],

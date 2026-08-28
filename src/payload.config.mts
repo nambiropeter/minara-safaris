@@ -27,6 +27,12 @@ function resolveSecret() {
 export default buildConfig({
   admin: {
     user: Users.slug,
+    components: {
+      graphics: {
+        Logo: '@/components/payload-logo#PayloadLogo',
+        Icon: '@/components/payload-icon#PayloadIcon',
+      },
+    },
   },
   collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads],
   editor: lexicalEditor(),

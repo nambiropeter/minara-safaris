@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -46,11 +47,35 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-5 sm:h-20 sm:px-8">
         <Link
           href="/"
-          className="flex items-baseline gap-2"
+          className="flex items-center gap-3 sm:gap-3.5 group"
           onClick={() => setOpen(false)}
         >
-          <span className="font-heading text-heading tracking-tight">{site.name}</span>
-          <span className="hidden text-sm text-muted-foreground sm:inline">{site.tagline}</span>
+          <div className="relative h-10 w-[60px] sm:h-12 sm:w-[72px] shrink-0">
+            <Image
+              src="/images/minara-logo-mark.png"
+              alt=""
+              fill
+              sizes="80px"
+              priority
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/images/minara-logo-mark-dark.png"
+              alt=""
+              fill
+              sizes="80px"
+              priority
+              className="object-contain hidden dark:block"
+            />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-heading tracking-tight group-hover:text-primary transition-colors">
+              {site.name}
+            </span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {site.tagline}
+            </span>
+          </div>
         </Link>
 
         <nav aria-label="Main" className="ml-auto hidden lg:block">

@@ -110,7 +110,7 @@ function Hero() {
         {moodboardItems.map((item, i) => (
           <div
             key={i}
-            className={`group absolute overflow-hidden rounded-2xl border border-white/20 bg-muted transition-all duration-500 ease-out hover:z-30 hover:scale-105 hover:shadow-2xl ${item.className}`}
+            className={`group absolute overflow-hidden rounded-2xl border border-white/20 bg-muted transition-[transform,box-shadow] duration-500 ease-out hover:z-30 hover:shadow-2xl ${item.className}`}
           >
             <Image
               src={item.src}
@@ -118,7 +118,7 @@ function Hero() {
               fill
               priority={item.priority}
               sizes="(min-width: 1024px) 35vw, 90vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-75 transition-opacity group-hover:opacity-90" />
             <span className="absolute bottom-2.5 left-2.5 inline-flex items-center rounded-full bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md transition-colors group-hover:bg-black/70 sm:bottom-3 sm:left-3">

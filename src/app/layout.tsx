@@ -46,6 +46,10 @@ export const metadata: Metadata = {
   },
   description:
     "Safari and tour packages across Kenya and East Africa, planned with you by a real consultant. Talk to us on WhatsApp for dates, prices and availability.",
+  icons: {
+    icon: "/images/minara-logo-mark.png",
+    apple: "/images/minara-logo-mark.png",
+  },
   openGraph: {
     siteName: site.name,
     type: "website",

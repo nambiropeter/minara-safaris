@@ -342,9 +342,17 @@ export interface Article {
   };
   coverImage: number | Media;
   /**
-   * Free-text labels for grouping related articles (not shown to visitors).
+   * Free-text labels for grouping related articles (e.g. Planning, Wildlife).
    */
   tags?: string[] | null;
+  /**
+   * Estimated read time in minutes (e.g. 5)
+   */
+  readTimeMinutes?: number | null;
+  /**
+   * Features this article prominently in the journal
+   */
+  isFeatured?: boolean | null;
   /**
    * Controls the date shown on the article — does not affect visibility.
    */
@@ -628,6 +636,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   body?: T;
   coverImage?: T;
   tags?: T;
+  readTimeMinutes?: T;
+  isFeatured?: T;
   publishedAt?: T;
   seo?:
     | T

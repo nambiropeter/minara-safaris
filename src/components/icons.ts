@@ -24,6 +24,7 @@ export { CalendarBlankIcon as CalendarBlank } from "@phosphor-icons/react/dist/s
 export { CaretLeftIcon as CaretLeft } from "@phosphor-icons/react/dist/ssr/CaretLeft";
 export { CaretRightIcon as CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 export { CheckIcon as Check } from "@phosphor-icons/react/dist/ssr/Check";
+export { ClockIcon as Clock } from "@phosphor-icons/react/dist/ssr/Clock";
 export { ListIcon as List } from "@phosphor-icons/react/dist/ssr/List";
 export { MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 export { MapPinIcon as MapPin } from "@phosphor-icons/react/dist/ssr/MapPin";

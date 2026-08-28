@@ -12,8 +12,6 @@ import { canonical } from "@/lib/seo";
 export const revalidate = 300;
 
 const STATIC_PAGE_SLUGS: PublicPageSlug[] = [
-  "about",
-  "contact",
   "faqs",
   "terms",
   "privacy",

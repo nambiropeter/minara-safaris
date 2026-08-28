@@ -55,18 +55,20 @@ export default async function PackagesPage({ searchParams }: PackagesPageProps) 
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="max-w-2xl">
-        <h1 className="text-display">Packages</h1>
-        <p className="measure mt-4 text-lead text-muted-foreground">
-          Fixed itineraries with published prices.
-        </p>
+      <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
+        <div className="max-w-2xl">
+          <h1 className="text-display">Packages</h1>
+          <p className="measure mt-2 text-lead text-muted-foreground">
+            Fixed itineraries with published prices.
+          </p>
+        </div>
+
+        <div className="shrink-0">
+          <PackageFiltersBar destinations={destinations} tags={tags} />
+        </div>
       </div>
 
-      <div className="mt-8">
-        <PackageFiltersBar destinations={destinations} tags={tags} />
-      </div>
-
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="mt-8 text-sm text-muted-foreground">
         {filtered.length} {filtered.length === 1 ? "package" : "packages"}
       </p>
 
