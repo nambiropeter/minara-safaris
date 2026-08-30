@@ -50,7 +50,9 @@ are fixed so product surfaces stay spatially predictable. Prose is capped by the
 
 - Container is `max-w-6xl` with `px-5 sm:px-8`. Sections separate by generous
   vertical space and 1px rules; alternating bands use `bg-secondary/40`.
-- **Photography is the material.** Package cards are 4:5, destination tiles 3:4.
+- **Photography is the material.** Package cards are 4:5, destination tiles 4:3 — both
+  image-first with the caption below, no text-over-image overlay. An overlay caption was
+  tried first but didn't hold up against the actual photography.
 - **The hero is a scattered stack**, not a single frame: five photographs
   overlapping inside a fixed-height column, each rotated a few degrees
   (−6° to +6°), each carrying a place-name pill bottom-left on a
@@ -68,9 +70,10 @@ are fixed so product surfaces stay spatially predictable. Prose is capped by the
 ## Components
 
 `PriceBlock` (the only money renderer) · `PackageCard` (used by home, catalogue,
-destination pages, related rails) · `WhatsAppCta` (renders nothing when no number
-is configured, and carries `data-analytics-*` for the Phase 5 conversion event) ·
-`SiteHeader` / `SiteFooter` / `MobileCtaBar` · `ThemeToggle`.
+destination pages, related rails) · `DestinationCard` (home, destinations index) ·
+`WhatsAppCta` (renders nothing when no number is configured, and carries
+`data-analytics-*` for the Phase 5 conversion event) · `SiteHeader` / `SiteFooter` /
+`MobileCtaBar` · `ThemeToggle`.
 
 Buttons come from shadcn with two project additions: a `whatsapp` variant and a
 `cta` size, because the shipped scale tops out at 36px and touch targets are

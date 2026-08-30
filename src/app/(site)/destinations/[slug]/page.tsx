@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { CtaBanner } from "@/components/cta-banner";
 import { PackageCard } from "@/components/package-card";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import {
@@ -10,6 +12,7 @@ import {
   getDestinationBySlug,
   getPackagesForDestination,
 } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -27,6 +30,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     description:
       destination.seo?.description ||
       `Safari packages and trip ideas for ${destination.name}.`,
+    ...canonical(`/destinations/${destination.slug}`),
   };
 }
 
@@ -39,7 +43,10 @@ export default async function DestinationDetailPage({ params }: RouteProps) {
   const cover = asMedia(destination.coverImage);
 
   return (
+    <>
     <main className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
+      <Breadcrumbs items={[{ label: "Destinations", href: "/destinations" }, { label: destination.name }]} />
+
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <h1 className="text-display">{destination.name}</h1>
@@ -103,5 +110,14 @@ export default async function DestinationDetailPage({ params }: RouteProps) {
         )}
       </section>
     </main>
+
+    <CtaBanner
+      title={`Still deciding on ${destination.name}?`}
+      description="Tell a consultant your dates and budget on WhatsApp and we'll put together an itinerary that fits."
+      whatsappContext={destination.name}
+      secondaryHref="/destinations"
+      secondaryLabel="Browse more destinations"
+    />
+    </>
   );
 }

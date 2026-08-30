@@ -54,6 +54,7 @@ Payload/Next 16 compatibility was verified 2026-08-10 (PRD §8.3). Payload 4 is 
 - Money is rendered by `PriceBlock` and nothing else — that's what makes "never a bare price" structural rather than a habit. Server reads go through `src/lib/content.ts` (Payload local API), never `fetch`.
 - Scope discipline is the point of this project. If a request sounds like Phase 2 (payments, accounts, booking, reviews, multi-currency), check PRD §9 before building it.
 - Prefer deleting to adding. The PRD was already cut down once from a three-service design.
+- Free-text slug fields (`Articles`, `Packages`, `Destinations`) use the shared `slugField()` factory (`src/fields/slug.mts`), a `beforeValidate` hook that auto-fills from the source field and normalizes whatever's typed — Payload has no built-in slug type. `Pages` is excluded; its slug is a fixed `select`, not free text.
 
 ## Self-update protocol
 
@@ -68,4 +69,6 @@ Do not log completed work here — that belongs in `docs/WORK-PLAN.md`. Do not r
 
 ## Status
 
-Phases 1–2 done. Phase 3 in progress: shared shell + home page built, seeded with synthetic content via `pnpm seed`. Remaining Phase 3: catalogue, package detail, destination pages, articles, static pages, error states. `DESIGN.md` records the visual system. The original static-HTML prototype lives in `legacy/`.
+Phases 1–5 done: shell, home, catalogue, package/destination/article detail, static pages, 404/error states, enquiry form (incl. package auto-fill via `?package=<id>`), `POST /api/leads`, canonical/OG/Twitter metadata, `sitemap.xml`/`robots.txt` (staging noindex by default until `NEXT_PUBLIC_SITE_URL` is set), Plausible analytics with WhatsApp-click and form-submit conversion tracking, Lighthouse mobile (90 perf / 100 a11y / 100 best-practices on package detail) and an accessibility pass across all page types. Resend wired but no-op until client env vars land — real-send unverified. Phase 6 (deploy + client content) is all that's left. Seeded with synthetic content via `pnpm seed` (delete before launch). `DESIGN.md` records the visual system. The original static-HTML prototype lives in `legacy/`.
+
+Phase 1 priced at 100,000 KES (50k/dev), finalized 2026-08-17 — covers finishing Phase 4–6 above, nothing further. Phase 2 (payments, order model, traveller accounts) draft-quoted separately in `docs/PHASE-2-QUOTE.md`; Phase 3 (flights) referenced there but unscoped. Neither is being built now — see PRD §9 before touching anything payments/accounts/booking-shaped.

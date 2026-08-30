@@ -1,8 +1,28 @@
 "use client";
 
+import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FadersHorizontal } from "@phosphor-icons/react";
 
 import type { Destination } from "@/payload-types";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 const DURATIONS = [
   { value: "short", label: "1–3 days" },
@@ -40,6 +60,7 @@ export function PackageFiltersBar({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   function update(key: string, value: string) {
     const params = new URLSearchParams(searchParams);
@@ -48,10 +69,17 @@ export function PackageFiltersBar({
     router.push(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
   }
 
-  const hasFilters = FILTER_KEYS.some((key) => searchParams.has(key));
+  function clear() {
+    router.push(pathname, { scroll: false });
+  }
 
-  return (
-    <div className="flex flex-wrap items-end gap-3">
+  let activeCount = 0;
+  FILTER_KEYS.forEach((key) => {
+    if (searchParams.has(key)) activeCount++;
+  });
+
+  const filterContent = (
+    <div className="flex flex-col gap-6 px-4 py-2 sm:px-6">
       <FilterSelect
         label="Destination"
         value={searchParams.get("destination") ?? ""}
@@ -94,6 +122,8 @@ export function PackageFiltersBar({
         ))}
       </FilterSelect>
 
+      <div className="my-2 h-px bg-border" />
+
       <FilterSelect label="Sort" value={searchParams.get("sort") ?? "featured"} onChange={(v) => update("sort", v)}>
         {SORTS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -102,13 +132,72 @@ export function PackageFiltersBar({
         ))}
       </FilterSelect>
 
-      {hasFilters && (
+      {activeCount > 0 && (
         <button
           type="button"
-          onClick={() => router.push(pathname, { scroll: false })}
-          className="h-11 text-sm font-medium text-primary underline-offset-4 hover:underline"
+          onClick={clear}
+          className="mt-2 h-11 w-full rounded-md text-sm font-medium text-primary underline-offset-4 hover:bg-secondary hover:underline"
         >
           Clear filters
+        </button>
+      )}
+    </div>
+  );
+
+  const triggerButton = (
+    <Button variant="outline" className="gap-2">
+      <FadersHorizontal className="size-4" weight="bold" />
+      Filters {activeCount > 0 && `(${activeCount})`}
+    </Button>
+  );
+
+  if (isDesktop) {
+    return (
+      <div className="flex flex-wrap items-center gap-4">
+        <Sheet>
+          <SheetTrigger render={triggerButton} />
+          <SheetContent side="right" className="sm:max-w-md">
+            <SheetHeader className="sm:px-6">
+              <SheetTitle>Filters & Sort</SheetTitle>
+              <SheetDescription>Refine your search to find the perfect safari.</SheetDescription>
+            </SheetHeader>
+            {filterContent}
+          </SheetContent>
+        </Sheet>
+
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={clear}
+            className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <Drawer>
+        <DrawerTrigger render={triggerButton} />
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>Filters & Sort</DrawerTitle>
+            <DrawerDescription>Refine your search to find the perfect safari.</DrawerDescription>
+          </DrawerHeader>
+          <div className="pb-8">{filterContent}</div>
+        </DrawerContent>
+      </Drawer>
+
+      {activeCount > 0 && (
+        <button
+          type="button"
+          onClick={clear}
+          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Clear
         </button>
       )}
     </div>
@@ -127,12 +216,12 @@ function FilterSelect({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-label text-muted-foreground">
+    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 min-w-40 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+        className="h-11 min-w-40 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
         {children}
       </select>

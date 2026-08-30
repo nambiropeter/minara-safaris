@@ -178,7 +178,13 @@ export interface Media {
 export interface Destination {
   id: number;
   name: string;
+  /**
+   * Auto-filled from name if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
+  /**
+   * Shown on the destination page above the list of packages that visit it.
+   */
   overview?: {
     root: {
       type: string;
@@ -209,6 +215,9 @@ export interface Destination {
 export interface Package {
   id: number;
   title: string;
+  /**
+   * Auto-filled from title if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
   durationDays: number;
   priceFrom: number;
@@ -249,7 +258,13 @@ export interface Package {
         id?: string | null;
       }[]
     | null;
+  /**
+   * What's included, one line per item, e.g. "Park entry fees"
+   */
   inclusions?: string[] | null;
+  /**
+   * What's not included, one line per item, e.g. "International flights"
+   */
   exclusions?: string[] | null;
   /**
    * Trip style: safari, beach, honeymoon, family, etc.
@@ -273,8 +288,17 @@ export interface Package {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Image used for social/link previews (not yet wired up on the site)
+   */
   ogImage?: (number | null) | Media;
+  /**
+   * Shows this package on the homepage
+   */
   isFeatured?: boolean | null;
+  /**
+   * Off = hidden from the public site entirely
+   */
   isPublished?: boolean | null;
   seo?: {
     title?: string | null;
@@ -290,8 +314,17 @@ export interface Package {
 export interface Article {
   id: number;
   title: string;
+  /**
+   * Auto-filled from title if left blank. Whatever you type is normalized to lowercase-with-hyphens on save.
+   */
   slug: string;
+  /**
+   * Short teaser shown on the journal list and in search/social previews.
+   */
   excerpt: string;
+  /**
+   * The full article content.
+   */
   body: {
     root: {
       type: string;
@@ -308,7 +341,21 @@ export interface Article {
     [k: string]: unknown;
   };
   coverImage: number | Media;
+  /**
+   * Free-text labels for grouping related articles (e.g. Planning, Wildlife).
+   */
   tags?: string[] | null;
+  /**
+   * Estimated read time in minutes (e.g. 5)
+   */
+  readTimeMinutes?: number | null;
+  /**
+   * Features this article prominently in the journal
+   */
+  isFeatured?: boolean | null;
+  /**
+   * Controls the date shown on the article — does not affect visibility.
+   */
   publishedAt?: string | null;
   seo?: {
     title?: string | null;
@@ -589,6 +636,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   body?: T;
   coverImage?: T;
   tags?: T;
+  readTimeMinutes?: T;
+  isFeatured?: T;
   publishedAt?: T;
   seo?:
     | T

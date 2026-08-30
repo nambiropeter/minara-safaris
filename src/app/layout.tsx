@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Figtree, Newsreader } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+
+import { AnalyticsListener } from "@/components/analytics-listener";
+import { plausibleDomain, site } from "@/lib/site";
 import "./globals.css";
 
 // Two families, both variable, both latin-only — the whole type budget is one
@@ -36,12 +39,24 @@ verdict, and DESIGN.md
 -->`;
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: {
-    default: "Minara Safaris — Kenyan safaris and East African tours",
+    default: "Minara Safaris - Kenyan safaris and East African tours",
     template: "%s · Minara Safaris",
   },
   description:
     "Safari and tour packages across Kenya and East Africa, planned with you by a real consultant. Talk to us on WhatsApp for dates, prices and availability.",
+  icons: {
+    icon: "/images/minara-logo-mark.png",
+    apple: "/images/minara-logo-mark.png",
+  },
+  openGraph: {
+    siteName: site.name,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -58,6 +73,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           a real HTML comment.
         */}
         <div hidden dangerouslySetInnerHTML={{ __html: DIRECTION_CONTRACT }} />
+        {plausibleDomain && (
+          <script defer data-domain={plausibleDomain} src="https://plausible.io/js/script.js" />
+        )}
+        <AnalyticsListener />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

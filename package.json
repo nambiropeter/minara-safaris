@@ -14,7 +14,9 @@
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
     "seed": "payload run src/scripts/seed.mts",
-    "optimize:images": "node src/scripts/optimize-images.mts"
+    "optimize:images": "node src/scripts/optimize-images.mts",
+    "check:accordion": "node --experimental-strip-types --no-warnings src/scripts/check-accordion-layout.mts",
+    "check:route-map": "node --experimental-strip-types --no-warnings src/scripts/check-route-map.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -31,6 +33,7 @@
     "payload": "3.87.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "^6.19.0",
     "shadcn": "^4.16.2",
     "sharp": "^0.35.3",
     "tailwind-merge": "^3.6.0",

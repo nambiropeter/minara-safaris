@@ -8,10 +8,22 @@
 
 export const site = {
   name: "Minara Safaris",
-  tagline: "Kenyan safaris and East African tours",
+  tagline: "Ask first. Travel after.",
   /** Unconfirmed. Set NEXT_PUBLIC_WHATSAPP_NUMBER (digits only, country code, no +). */
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
+  /** Set NEXT_PUBLIC_SITE_URL once the domain is live — used for metadataBase, canonical tags, and sitemap/robots. Falls back to localhost so dev doesn't warn. */
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 } as const;
+
+/** Derived from `site.url` so there's one env var, not two, for "what domain is this". Undefined pre-launch (localhost), so Plausible stays off until a real domain is set. */
+export const plausibleDomain = (() => {
+  try {
+    const host = new URL(site.url).hostname;
+    return host === "localhost" ? undefined : host;
+  } catch {
+    return undefined;
+  }
+})();
 
 export const nav = [
   { href: "/packages", label: "Packages" },

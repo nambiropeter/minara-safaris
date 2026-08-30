@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 
-import { ArrowRight } from "@/components/icons";
-import { getAllDestinations, asMedia } from "@/lib/content";
+import { DestinationCard } from "@/components/destination-card";
+import { getAllDestinations } from "@/lib/content";
+import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Destinations",
   description: "Explore safari and coast destinations across Kenya and East Africa.",
+  ...canonical("/destinations"),
 };
 
 export default async function DestinationsPage() {
@@ -26,43 +26,12 @@ export default async function DestinationsPage() {
       </div>
 
       {destinations.length > 0 ? (
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {destinations.map((destination) => {
-            const cover = asMedia(destination.coverImage);
-            return (
-              <li key={destination.id}>
-                <Link
-                  href={`/destinations/${destination.slug}`}
-                  className="group block overflow-hidden rounded-xl border border-border"
-                >
-                  <div className="relative aspect-[4/3] bg-muted">
-                    {cover?.url ? (
-                      <Image
-                        src={cover.url}
-                        alt={cover.alt}
-                        fill
-                        sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
-                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center px-6 text-center text-label text-muted-foreground">
-                        Image coming soon
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                    <p className="absolute inset-x-0 bottom-0 p-4 font-heading text-heading text-white">
-                      {destination.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-primary">
-                    View destination
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="sr-only">Results</h2>
+          {destinations.map((destination) => (
+            <DestinationCard key={destination.id} destination={destination} />
+          ))}
+        </div>
       ) : (
         <div className="mt-10 rounded-xl border border-dashed border-border px-6 py-14 text-center">
           <p className="font-heading text-heading">No destinations published yet</p>

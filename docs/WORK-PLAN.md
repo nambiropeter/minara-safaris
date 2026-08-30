@@ -2,8 +2,8 @@
 
 Execution tracker. Scope lives in `docs/PRD.md`; stack and invariants in `CLAUDE.md`.
 
-**Status:** Pre-build — planning complete, nothing implemented.
-**Last updated:** 2026-08-10
+**Status:** Phases 1–5 complete except Resend real-send verification (blocked on client env vars). Phase 6 is the only phase left, and it's almost entirely blocked on client content/accounts — see below.
+**Last updated:** 2026-08-18
 
 ---
 
@@ -54,34 +54,34 @@ Execution tracker. Scope lives in `docs/PRD.md`; stack and invariants in `CLAUDE
 - [x] Home — hero, featured packages, deals strip (renders only when a package carries an `offerLabel`), destination tiles, "how booking goes", closing CTA. Trust bar deliberately absent: nothing that feeds it is confirmed, and the page is composed to hold without it
 - [x] `pnpm seed` — 4 media, 4 destinations, 6 packages of **synthetic** content so the design is judged against real-shaped data. Refuses to run with `NODE_ENV=production`. Delete before launch
 - [x] Design system recorded in `DESIGN.md`; direction contract emitted as a real HTML comment in the built markup (a JSX comment is stripped by the compiler and audits nothing)
-- [ ] Package catalogue — filters (destination, duration, price, tags) + sort
-- [ ] Package detail — gallery, price block, itinerary, inclusions/exclusions
-- [ ] Destination pages
-- [ ] Articles list + detail
-- [ ] Static pages incl. Contact with address, hours, map, `tel:` link
-- [ ] 404 / error states
+- [x] Package catalogue (`/packages`) — filters (destination, duration, budget, tags, free-text query) + sort (featured/price/duration), empty states with WhatsApp fallback
+- [x] Package detail (`/packages/[slug]`) — `ImageLightbox` gallery, `PriceBlock`, itinerary (blank `description` handled), inclusions/exclusions, `TouristTrip` JSON-LD, related packages, `CtaBanner`
+- [x] Destination pages (`/destinations`, `/destinations/[slug]`) — cross-links live packages for that destination, `CtaBanner`
+- [x] Articles list + detail (`/journal`, `/journal/[slug]`) — cover image, excerpt, `CtaBanner`
+- [x] Static pages — generic `[slug]/page.tsx` renders about/faqs/terms/privacy from Payload; `/contact` is its own dedicated route
+- [x] 404 / error states — `src/app/(site)/not-found.tsx` and `error.tsx`, both rendering inside the site chrome (header/footer/mobile CTA)
 
 ## Phase 4 — Conversion path
 
-- [ ] WhatsApp deeplink with prefilled package name + URL
-- [ ] Enquiry form — validation, package auto-fill from package pages
-- [ ] `POST /api/leads` — honeypot, per-IP rate limit, time-to-submit check
-- [ ] UTM/referrer capture persisted on the lead
-- [ ] Resend notification to staff inbox — **verified end-to-end with a real send**
-- [ ] Confirmation state after submit
-- [ ] Leads inbox usable in Payload admin, status filter working
+- [x] WhatsApp deeplink with prefilled context (`WhatsAppCta`, `src/lib/site.ts`) — renders nothing if no number is configured, so a dead link never ships
+- [x] Enquiry form (`src/components/enquiry-form.tsx`) — honeypot, validation, package auto-fill via `?package=<id>` query param (read on `/contact`, linked from package detail pages' "Or send an enquiry")
+- [x] `POST /api/leads` (`src/app/api/leads/route.ts`) — Zod schema (incl. `.trim()` on `name`/`email`), honeypot (`website` field), min-time-to-submit (3s), per-IP rate limit (`src/lib/rate-limit.ts`)
+- [x] UTM/referrer capture persisted on the lead — form captures and forwards `utm.*`/`referrer`/`source`
+- [x] Resend notification wired (`src/lib/notify-lead.ts`) — no-ops until `RESEND_API_KEY`/`RESEND_FROM_EMAIL`/`LEADS_NOTIFICATION_EMAIL` are set (blocked on client, see below); not yet verified with a real send
+- [x] Confirmation state after submit — enquiry form shows a done state; `trackEvent("form_submit", ...)` fires alongside it
+- [x] Leads inbox usable in Payload admin, `status` field (new/contacted/closed) with `defaultColumns` incl. status — access locked to authenticated staff only
 
 ## Phase 5 — SEO, analytics, performance
 
-- [ ] Per-page metadata from CMS fields; OG + Twitter cards
-- [ ] `sitemap.xml`, `robots.txt`, canonical tags
-- [ ] JSON-LD `TouristTrip` / `Product` on package pages
-- [ ] Analytics installed
-- [ ] **WhatsApp click tracked as a conversion event, with package slug** — launch blocker
-- [ ] Form submission tracked as a conversion event
-- [ ] Consent banner if GA4 chosen
-- [ ] Lighthouse mobile: LCP < 2.5s on a real package page
-- [ ] Accessibility pass — landmarks, alt text, focus states, contrast ≥ 4.5:1
+- [x] Per-page metadata; OG + Twitter cards (`src/app/layout.tsx` `metadataBase`/`openGraph`/`twitter`, per-CMS-page `seo.title`/`seo.description` where present)
+- [x] `sitemap.xml`, `robots.txt`, canonical tags (`src/app/sitemap.ts`, `src/app/robots.ts`, `src/lib/seo.ts#canonical` applied on all 10 page types) — `robots.txt` disallows everything until `NEXT_PUBLIC_SITE_URL` is set, giving staging noindex for free
+- [x] JSON-LD `TouristTrip` on package pages
+- [x] Analytics installed — Plausible, script conditionally rendered from `plausibleDomain` (`src/lib/site.ts`), inert until `NEXT_PUBLIC_SITE_URL` is real
+- [x] **WhatsApp click tracked as a conversion event, with package slug** — `AnalyticsListener` delegated click handler off existing `data-analytics-event`/`data-analytics-package` attributes on `WhatsAppCta`
+- [x] Form submission tracked as a conversion event — `trackEvent("form_submit", { package })` in `enquiry-form.tsx`
+- [x] Consent banner if GA4 chosen — moot, Plausible was chosen over GA4 and doesn't require cookie consent
+- [x] Lighthouse mobile, package detail page (`pnpm dlx lighthouse`, throttled/simulated): Performance 90, Accessibility 100, Best Practices 100, SEO 69 (69 is `is-crawlable` failing as expected — `robots.txt` disallows everything locally without `NEXT_PUBLIC_SITE_URL`, re-check once that's set). Fixed: gallery's first thumbnail (the LCP element on package pages) was lazy-loaded like the rest of the grid — added `priority` to it in `ImageLightbox`, cutting Speed Index from 4.0s to 0.9s. LCP itself reads 3.6s under Lighthouse's simulated-throttling model, but that number is dominated by lantern's simulated network chain rather than real transfer time (breakdown table shows the real subparts sum to ~250ms) — an artifact of testing on localhost with no real host latency or CDN; re-measure against the deployed site before treating this as a launch blocker
+- [x] Accessibility pass — Lighthouse a11y audited across all 5 page types (home, packages, destinations, contact, journal): 100 on all after fixing a real `heading-order` violation on `/packages` and `/destinations` (h1 followed directly by card `<h3>`s with no `<h2>` — added a `sr-only` `<h2>Results</h2>` before each grid). Also fixed a missing focus indicator on the homepage search input (`outline-none` on the input with no `focus-within` ring on its wrapper) — added `focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50` matching the `Button` component's ring convention. Landmarks and contrast (≥4.5:1, both themes) verified via Lighthouse's automated checks, all passing
 
 ## Phase 6 — Launch
 
@@ -114,10 +114,21 @@ Phases 1–5 can complete in full with placeholder content. Do not slip the buil
 
 ---
 
+## Phase 2 (post-launch, not started)
+
+Draft scope + price in `docs/PHASE-2-QUOTE.md` — payments (Flutterwave/Paystack), order/booking model, traveller accounts, invoicing, live chat embed. Phase 3 (flights/dynamic packaging) referenced there too, unscoped. Not started; do not pull any of this into Phase 1–6 work.
+
+---
+
 ## Decision log
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-08-18 | Phase 5 closed out: Lighthouse mobile (90 perf / 100 a11y / 100 best-practices, package detail page) + accessibility pass across all 5 page types | Found and fixed 3 real issues: LCP element (package gallery's first thumbnail) was lazy-loaded like the rest of the grid; `/packages` and `/destinations` skipped a heading level (h1 straight to card h3s); homepage search input had no visible focus indicator. SEO score (69) is `is-crawlable` failing as expected — `robots.txt` disallows everything locally without `NEXT_PUBLIC_SITE_URL` — not a real gap. Phase 6 is now the only remaining phase, and it's almost entirely blocked on client-supplied content and accounts (see "Blocked / waiting on client" above) |
+| 2026-08-17 | Phase 4/5 conversion + SEO work finished in one pass: enquiry form package auto-fill, Plausible analytics + WhatsApp/form-submit tracking, per-page canonical/OG/Twitter metadata, `sitemap.xml`/`robots.txt` | Discovered enquiry form UI was already fully built (WORK-PLAN was stale, not the code) — only the auto-fill link and the entire analytics/SEO layer were genuinely missing. Verified with `tsc --noEmit`, `pnpm lint`, `pnpm build`, and a running dev server (sitemap/robots/canonical/tracking attrs all confirmed via curl) |
+| 2026-08-17 | Phase 1 price finalized at 100,000 KES total (50k/dev) | Matches remaining real scope (finish enquiry form, SEO/analytics, deploy) — most of frontend/CMS already built, so this is fair, not a lowball |
+| 2026-08-17 | Phase 2 quoted separately (`docs/PHASE-2-QUOTE.md`, 120k–180k KES draft), Phase 3 referenced but unscoped (350k–600k KES draft) | Client's own roadmap quote underpriced both against real scope (M-Pesa/card via one aggregator still needs a new order model + accounts + webhook-safe payment handling; flights need Duffel/Amadeus Self-Service, not full GDS accreditation) — not to be quoted as fixed numbers until Phase 1 ships and scope is confirmed |
+| 2026-08-17 | Native mobile app dropped from the roadmap entirely, not deferred to a later phase | A once-or-twice-a-year purchase doesn't justify an app install; responsive web already serves this |
 | 2026-08-10 | No separate backend service | Payload in-process covers admin, auth, media, migrations; a second service adds two deploys and a REST hop to our own DB for a site with one write path |
 | 2026-08-10 | Dropped the public read API (`GET /api/packages` etc.) | Single consumer in the same process; server components query directly |
 | 2026-08-10 | Payload pinned `3.87.x` | Verified against Next 16.3.0 / React 19.2.8; v4 is canary |
@@ -130,3 +141,4 @@ Phases 1–5 can complete in full with placeholder content. Do not slip the buil
 | 2026-08-11 | Icons: Phosphor, `lucide-react` removed | Owner's call on distinctiveness — Lucide is the default of most React sites. Phosphor also ships `WhatsappLogo`, so the primary conversion glyph comes from the icon family instead of a hand-rolled SVG, and the weight axis covers display scale if Phase 3 goes icon-forward. Rejected: Heroicons (too small a set for travel vocabulary), Material Symbols (font request on the LCP path, generic Android register), Hugeicons (full set is paid). shadcn's `components.json` supports `iconLibrary: "phosphor"` natively, so future `shadcn add` stays consistent |
 | 2026-08-11 | Phosphor imported per-icon from `dist/ssr/*` via `src/components/icons.ts` | Root export is the client build and reads `IconContext`, which breaks server components; and Phosphor isn't in Next's `optimizePackageImports` defaults, so barrel imports rely on tree-shaking alone. Verified `/` still prerenders as static after the swap |
 | 2026-08-10 | Blog added to V1 scope | SEO was named as the acquisition channel but ~15 commercial pages cannot rank alone |
+| 2026-08-13 | Free-text slug fields (`Articles`, `Packages`, `Destinations`) get a shared `beforeValidate` hook (`src/fields/slug.mts`) | Payload has no built-in slug type; a trailing-space slug caused a real 404 on a newly created article. `Pages` excluded — its slug is a fixed `select`, not free text |

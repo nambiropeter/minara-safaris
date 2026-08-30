@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { seoField } from '../fields/seo.mts'
+import { slugField } from '../fields/slug.mts'
 
 export const Packages: CollectionConfig = {
   slug: 'packages',
@@ -10,7 +11,7 @@ export const Packages: CollectionConfig = {
   },
   fields: [
     { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    slugField('title'),
     { name: 'durationDays', type: 'number', required: true, min: 1 },
     {
       type: 'row',
@@ -44,8 +45,8 @@ export const Packages: CollectionConfig = {
         { name: 'description', type: 'textarea' },
       ],
     },
-    { name: 'inclusions', type: 'text', hasMany: true },
-    { name: 'exclusions', type: 'text', hasMany: true },
+    { name: 'inclusions', type: 'text', hasMany: true, admin: { description: 'What\'s included, one line per item, e.g. "Park entry fees"' } },
+    { name: 'exclusions', type: 'text', hasMany: true, admin: { description: 'What\'s not included, one line per item, e.g. "International flights"' } },
     { name: 'tags', type: 'text', hasMany: true, admin: { description: 'Trip style: safari, beach, honeymoon, family, etc.' } },
     {
       name: 'destinations',
@@ -67,12 +68,12 @@ export const Packages: CollectionConfig = {
         { name: 'isCover', type: 'checkbox', defaultValue: false },
       ],
     },
-    { name: 'ogImage', type: 'upload', relationTo: 'media' },
+    { name: 'ogImage', type: 'upload', relationTo: 'media', admin: { description: 'Image used for social/link previews (not yet wired up on the site)' } },
     {
       type: 'row',
       fields: [
-        { name: 'isFeatured', type: 'checkbox', defaultValue: false },
-        { name: 'isPublished', type: 'checkbox', defaultValue: false },
+        { name: 'isFeatured', type: 'checkbox', defaultValue: false, admin: { description: 'Shows this package on the homepage' } },
+        { name: 'isPublished', type: 'checkbox', defaultValue: false, admin: { description: 'Off = hidden from the public site entirely' } },
       ],
     },
     seoField,

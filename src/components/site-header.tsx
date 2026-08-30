@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -46,10 +47,35 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-5 sm:h-20 sm:px-8">
         <Link
           href="/"
-          className="font-heading text-heading tracking-tight"
+          className="flex items-center gap-3 sm:gap-3.5 group"
           onClick={() => setOpen(false)}
         >
-          {site.name}
+          <div className="relative h-10 w-[60px] sm:h-12 sm:w-[72px] shrink-0">
+            <Image
+              src="/images/minara-logo-mark.png"
+              alt=""
+              fill
+              sizes="80px"
+              priority
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/images/minara-logo-mark-dark.png"
+              alt=""
+              fill
+              sizes="80px"
+              priority
+              className="object-contain hidden dark:block"
+            />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-heading tracking-tight group-hover:text-primary transition-colors">
+              {site.name}
+            </span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {site.tagline}
+            </span>
+          </div>
         </Link>
 
         <nav aria-label="Main" className="ml-auto hidden lg:block">
@@ -62,13 +88,8 @@ export function SiteHeader() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative inline-flex items-center px-1.5 py-1 text-sm font-medium transition-colors duration-200",
-                      "after:absolute after:bottom-0 after:left-1.5 after:right-1.5 after:h-[2px] after:rounded-[1px] after:bg-primary",
-                      "after:origin-left after:transition-transform after:duration-300 after:ease-[cubic-bezier(0.16,1,0.3,1)]",
-                      "hover:text-foreground focus-visible:text-foreground [&:hover::after]:scale-x-100 [&:focus-visible::after]:scale-x-100",
-                      active
-                        ? "text-primary [&::after]:scale-x-100"
-                        : "text-muted-foreground [&::after]:scale-x-0",
+                      "link-underline inline-flex items-center px-1.5 py-1 text-sm font-medium",
+                      active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {item.label}

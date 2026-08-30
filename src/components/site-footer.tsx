@@ -1,5 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 
+import { RouteMap } from "@/components/route-map";
+import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { nav, site } from "@/lib/site";
 
 /**
@@ -10,25 +13,49 @@ import { nav, site } from "@/lib/site";
  */
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-border bg-secondary/40">
+    <footer className="bg-secondary/40">
       <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8">
-        <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
+        {/* Wraps rather than squeezing: three columns only fit side by side
+            once there's room for the map. */}
+        <div className="flex flex-col gap-10 sm:flex-row sm:flex-wrap sm:justify-between">
           <div className="max-w-sm">
-            <p className="font-heading text-heading">{site.name}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3.5">
+              <div className="relative h-12 w-[72px] sm:h-14 sm:w-[84px] shrink-0">
+                <Image
+                  src="/images/minara-logo-mark.png"
+                  alt=""
+                  fill
+                  sizes="90px"
+                  className="object-contain dark:hidden"
+                />
+                <Image
+                  src="/images/minara-logo-mark-dark.png"
+                  alt=""
+                  fill
+                  sizes="90px"
+                  className="object-contain hidden dark:block"
+                />
+              </div>
+              <div>
+                <p className="font-heading text-title leading-tight">{site.name}</p>
+                <p className="text-xs text-muted-foreground italic">{site.tagline}</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
               Safari and tour packages across Kenya and East Africa. Every trip
-              is planned with a consultant — we don&rsquo;t sell anything you
+              is planned with a consultant - we don&rsquo;t sell anything you
               can&rsquo;t ask a question about first.
             </p>
+            <WhatsAppCta label="Chat with a consultant" className="mt-6" />
           </div>
 
           <nav aria-label="Footer">
-            <ul className="grid grid-cols-2 gap-x-10 gap-y-2 sm:grid-cols-1">
+            <ul className="grid grid-cols-2 gap-x-10 gap-y-2.5 sm:grid-cols-1">
               {nav.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="link-underline text-sm text-muted-foreground hover:text-foreground"
                   >
                     {item.label}
                   </Link>
@@ -36,6 +63,8 @@ export function SiteFooter() {
               ))}
             </ul>
           </nav>
+
+          <RouteMap />
         </div>
 
         <div className="mt-12 flex flex-col gap-2 border-t border-border pt-6 text-label text-muted-foreground sm:flex-row sm:justify-between">
@@ -43,10 +72,10 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} {site.name}
           </p>
           <p className="flex gap-4">
-            <Link href="/terms" className="transition-colors hover:text-foreground">
+            <Link href="/terms" className="link-underline hover:text-foreground">
               Terms
             </Link>
-            <Link href="/privacy" className="transition-colors hover:text-foreground">
+            <Link href="/privacy" className="link-underline hover:text-foreground">
               Privacy
             </Link>
           </p>
