@@ -61,7 +61,10 @@ export async function POST(request: Request) {
 
   const found = await payload.find({
     collection: "packages",
-    where: { id: { in: data.items.map((i) => i.refId) } },
+    where: {
+      id: { in: data.items.map((i) => i.refId) },
+      isPublished: { equals: true },
+    },
     limit: 10,
     depth: 0,
   });

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { bookingStatusCopy } from "@/lib/booking-status-copy";
 import { formatMoney, type Currency } from "@/lib/money";
 import { findOrderByToken } from "@/lib/orders";
 
@@ -21,20 +22,14 @@ export default async function BookingPage({
   if (!order) notFound();
 
   const currency = order.currency as Currency;
+  const { heading, body, totalLabel } = bookingStatusCopy(order.status);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
       <p className="text-label text-muted-foreground">Booking {order.orderNumber}</p>
-      <h1 className="text-title mt-1">
-        {order.status === "pending" ? "Confirming your payment" : "Your booking"}
-      </h1>
+      <h1 className="text-title mt-1">{heading}</h1>
 
-      {order.status === "pending" && (
-        <p className="text-lead mt-3">
-          We are waiting for your payment to confirm. This page updates once it does — refresh in a
-          moment.
-        </p>
-      )}
+      {body && <p className="text-lead mt-3">{body}</p>}
 
       <dl className="mt-8 space-y-3">
         {order.items.map((item, i) => (
@@ -47,7 +42,7 @@ export default async function BookingPage({
           </div>
         ))}
         <div className="flex justify-between gap-4 border-t pt-3 font-semibold">
-          <dt>Total paid</dt>
+          <dt>{totalLabel}</dt>
           <dd>{formatMoney(order.amountTotal, currency)}</dd>
         </div>
       </dl>

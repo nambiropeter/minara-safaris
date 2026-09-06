@@ -27,6 +27,7 @@
     "@payloadcms/richtext-lexical": "3.87.1",
     "@payloadcms/storage-s3": "3.87.1",
     "@phosphor-icons/react": "^2.1.10",
+    "@stripe/cli": "^1.50.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "graphql": "^16.14.2",
