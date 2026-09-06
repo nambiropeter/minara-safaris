@@ -26,4 +26,19 @@ describe("allowRequest", () => {
     expect(allowRequest(a)).toBe(false);
     expect(allowRequest(b)).toBe(true);
   });
+
+  it("honours a custom maxRequests", () => {
+    const k = key("custom");
+    const opts = { maxRequests: 2 };
+    expect(allowRequest(k, opts)).toBe(true);
+    expect(allowRequest(k, opts)).toBe(true);
+    expect(allowRequest(k, opts)).toBe(false);
+  });
+
+  it("honours a custom windowMs", () => {
+    const k = key("window");
+    const opts = { maxRequests: 1, windowMs: 1 };
+    expect(allowRequest(k, opts)).toBe(true);
+    expect(allowRequest(k, opts)).toBe(false);
+  });
 });
