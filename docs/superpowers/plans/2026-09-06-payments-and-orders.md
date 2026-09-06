@@ -686,7 +686,15 @@ git commit -m "feat(payments): server-side order pricing from the catalogue"
 
 - [ ] **Step 1: Install the SDK**
 
-Run: `pnpm add stripe`
+Run: `pnpm add stripe@22.6.1`
+
+Pinned exactly, as Payload is. This is money code; a minor bump should be a deliberate act with a
+diff to read, not something a lockfile refresh does quietly.
+
+Only the **server** SDK. Do not install `@stripe/stripe-js` or `@stripe/react-stripe-js` — hosted
+Checkout is a plain redirect to `session.url`, so there is no client-side Stripe code and nothing
+added to the browser bundle. Those packages only become relevant if Payment Element is ever
+embedded on-site, which would also widen PCI scope beyond SAQ-A.
 
 - [ ] **Step 2: Write the Stripe client**
 
@@ -696,13 +704,24 @@ Create `src/lib/stripe.ts`:
 import Stripe from "stripe";
 
 /**
+ * Pinned deliberately. Without an explicit apiVersion the account's dashboard
+ * default applies, so someone clicking "upgrade" in Stripe could change the
+ * shape of responses this code parses without a single line changing here.
+ *
+ * This is the version stripe@22.6.1 targets. If the SDK is upgraded, read the
+ * new value from `require("stripe").Stripe.API_VERSION` and bump this together
+ * with the SDK — TypeScript rejects any literal the installed SDK doesn't know.
+ */
+const STRIPE_API_VERSION = "2026-08-26.dahlia";
+
+/**
  * Returns null until STRIPE_SECRET_KEY exists, matching the no-op pattern in
  * `notify-lead.ts` so local work without credentials still builds.
  */
 export function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) return null;
-  return new Stripe(key);
+  return new Stripe(key, { apiVersion: STRIPE_API_VERSION });
 }
 ```
 
@@ -856,7 +875,8 @@ export async function POST(request: Request) {
 - [ ] **Step 5: Verify it compiles and lints**
 
 Run: `pnpm lint && npx tsc --noEmit`
-Expected: no errors.
+Expected: no errors. If TypeScript rejects `STRIPE_API_VERSION`, the installed SDK targets a
+different version than the pin — reconcile them rather than widening the type.
 
 - [ ] **Step 6: Manually verify a session is created**
 

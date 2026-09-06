@@ -122,7 +122,36 @@ Email via Resend, following `src/lib/notify-lead.ts`.
 
 Generation and retries run on Payload's jobs queue, triggered by a Vercel cron. No worker service.
 
-### A.7 Provider
+### A.7 SDK, not raw HTTP
+
+Use the official `stripe` Node SDK, pinned exactly (`stripe@22.6.1`), server-side only.
+
+The deciding factor is **webhook signature verification**. `constructEvent` parses the `t=`/`v1=`
+header, reconstructs the signed payload, computes HMAC-SHA256, compares in constant time, and
+enforces a replay window. Hand-rolling that has a nasty failure mode: a subtly wrong implementation
+still passes every test you would naturally write, because genuine Stripe events verify fine — what
+silently breaks is the rejection of forged ones, on the one code path allowed to mark an order paid.
+
+Also: idempotency keys survive the SDK's automatic network retries, `event.data.object` narrows per
+event type so webhook handling is not `any`-casting in money code, and the error taxonomy
+(`StripeCardError` vs `StripeInvalidRequestError`) lets handlers branch without string-matching.
+
+**Pin `apiVersion` explicitly** in `src/lib/stripe.ts`. Without it the account's dashboard default
+applies, so someone clicking "upgrade" in the Stripe dashboard could change the shape of responses
+this code parses with no code change and no deploy. Bump it together with the SDK, reading the value
+from `Stripe.API_VERSION`.
+
+The usual bundle-size objection does not apply — both call sites are route handlers with
+`runtime = "nodejs"`, so the SDK never reaches the browser.
+
+**Do not install `@stripe/stripe-js` or `@stripe/react-stripe-js`.** Hosted Checkout is a redirect
+to `session.url`; there is no client-side Stripe code. Those packages become relevant only if
+Payment Element is embedded on-site, which would widen PCI scope beyond SAQ-A.
+
+Total API surface used: `checkout.sessions.create`, `webhooks.constructEvent`, and — in Part B —
+`refunds.create`.
+
+### A.8 Provider
 
 Stripe, on the client's **UK** entity. Supported country, multi-currency presentment, and Checkout
 handles SCA/3DS automatically for UK and EEA cards — which is also why we use hosted Checkout rather
@@ -276,7 +305,7 @@ Each line is a test that must fail if the logic breaks.
 ## Open questions
 
 1. **Merchant of record and settlement.** UK entity paying out to a UK account? If funds must land
-   in a Kenyan account for a Kenyan entity, the provider changes (A.7).
+   in a Kenyan account for a Kenyan entity, the provider changes (A.8).
 2. **UK VAT.** If the client is VAT-registered, UK travel sales may fall under the Tour Operators'
    Margin Scheme, which changes how invoices must be presented. Confirm with their accountant before
    the invoice template is built — this is a treatment question, not a layout one.
