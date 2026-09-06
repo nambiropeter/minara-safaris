@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 
 import configPromise from "@payload-config";
+import { notifyOrderPaid } from "@/lib/notify-order";
 import { getStripe } from "@/lib/stripe";
 import { assertAmountMatches } from "@/lib/webhook-guards";
 
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, refused: true });
       }
 
-      await payload.update({
+      const updated = await payload.update({
         collection: "orders",
         id: orderId,
         data: {
@@ -100,6 +101,14 @@ export async function POST(request: Request) {
           },
         },
       });
+
+      // A failed send must never fail the webhook response: Stripe would
+      // retry, and the retry would be swallowed by the processed-events
+      // claim above without ever attempting notification again.
+      const bookingToken = session.metadata?.bookingToken;
+      if (bookingToken) {
+        await notifyOrderPaid(updated, bookingToken).catch(() => {});
+      }
     } catch (error) {
       console.error("webhook fulfilment failed after claiming event", error, {
         eventId: event.id,

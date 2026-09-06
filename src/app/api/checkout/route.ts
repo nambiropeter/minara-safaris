@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     mode: "payment",
     customer_email: data.customerEmail,
     client_reference_id: String(order.id),
-    metadata: { orderId: String(order.id) },
+    metadata: { orderId: String(order.id), bookingToken: token },
     line_items: priced.items.map((item) => ({
       quantity: item.quantity,
       price_data: {
