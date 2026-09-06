@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
+import { assertNotRepricingPaidOrder } from './hooks/freeze-paid-orders.ts';
+
 /**
  * The order record is also the CRM — Payload's list view, filters and query
  * presets are the whole customer database at this volume.
@@ -21,6 +23,16 @@ export const Orders: CollectionConfig = {
     defaultColumns: ['orderNumber', 'status', 'customerEmail', 'amountTotal', 'createdAt'],
   },
   enableQueryPresets: true,
+  hooks: {
+    beforeChange: [
+      ({ operation, originalDoc, data }) => {
+        if (operation === 'update') {
+          assertNotRepricingPaidOrder({ previous: originalDoc, incoming: data });
+        }
+        return data;
+      },
+    ],
+  },
   fields: [
     { name: 'orderNumber', type: 'text', required: true, unique: true, index: true, admin: { readOnly: true } },
     {
