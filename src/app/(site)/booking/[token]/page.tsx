@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { bookingStatusCopy } from "@/lib/booking-status-copy";
 import { formatMoney, type Currency } from "@/lib/money";
 import { findOrderByToken } from "@/lib/orders";
+import { BookingStatusPoller } from "./status-poller";
 
 /** Per-customer and never cached. ISR here would serve one person's booking to another. */
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export default async function BookingPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
+      {order.status === "pending" && <BookingStatusPoller />}
       <p className="text-label text-muted-foreground">Booking {order.orderNumber}</p>
       <h1 className="text-title mt-1">{heading}</h1>
 
