@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BookingForm } from "@/components/booking-form";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CtaBanner } from "@/components/cta-banner";
 import { Check, MapPin, X } from "@/components/icons";
@@ -153,7 +154,10 @@ export default async function PackageDetailPage({ params }: RouteProps) {
         <aside className="lg:sticky lg:top-28 lg:h-fit">
           <div className="rounded-xl border border-border p-6">
             <PriceBlock pkg={pkg} size="detail" />
-            <WhatsAppCta context={pkg.title} slug={pkg.slug} className="mt-6 w-full" />
+            <div className="mt-6">
+              <BookingForm packageId={pkg.id} packageSlug={pkg.slug} />
+            </div>
+            <WhatsAppCta context={pkg.title} slug={pkg.slug} className="mt-3 w-full" />
             <Link
               href={`/contact?package=${pkg.id}`}
               className="link-underline mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"
