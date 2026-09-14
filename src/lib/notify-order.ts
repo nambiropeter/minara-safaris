@@ -27,7 +27,7 @@ export async function notifyOrderPaid(order: Order, token: string): Promise<void
       `Booking reference: ${order.orderNumber}`,
       `Total paid: ${total}`,
       ``,
-      `View your booking:`,
+      `View your booking and download your invoice:`,
       `${site}/booking/${token}`,
       ``,
       `Keep this link — it is private to you and does not expire.`,

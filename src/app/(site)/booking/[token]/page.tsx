@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { bookingStatusCopy } from "@/lib/booking-status-copy";
 import { formatMoney, type Currency } from "@/lib/money";
 import { findOrderByToken } from "@/lib/orders";
+import { buttonVariants } from "@/components/ui/button";
 import { BookingStatusPoller } from "./status-poller";
 
 /** Per-customer and never cached. ISR here would serve one person's booking to another. */
@@ -48,6 +49,18 @@ export default async function BookingPage({
           <dd>{formatMoney(order.amountTotal, currency)}</dd>
         </div>
       </dl>
+
+      {order.status === "paid" && (
+        <div className="mt-8">
+          <a
+            href={`/api/booking/${token}/invoice`}
+            download
+            className={buttonVariants({ variant: "outline" })}
+          >
+            Download invoice (PDF)
+          </a>
+        </div>
+      )}
 
       <p className="text-label text-muted-foreground mt-8">
         Keep this link. It is the only way back to this page, and it does not expire.
