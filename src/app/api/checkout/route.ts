@@ -12,12 +12,13 @@ export const runtime = "nodejs";
 
 /**
  * Trust boundary. Note what is absent: there is no `amount` field. The client
- * cannot express a price, so it cannot tamper with one.
+ * cannot express a price, so it cannot tamper with one — and strict objects
+ * reject a request that tries, rather than quietly dropping the field.
  */
-const checkoutSchema = z.object({
+const checkoutSchema = z.strictObject({
   items: z
     .array(
-      z.object({
+      z.strictObject({
         kind: z.literal("package"),
         refId: z.string().trim().min(1).max(64),
         quantity: z.coerce.number().int().min(1).max(50),
@@ -28,7 +29,7 @@ const checkoutSchema = z.object({
   customerName: z.string().trim().min(1).max(200),
   customerEmail: z.email().trim(),
   customerPhone: z.string().trim().max(50).optional(),
-  travelDate: z.string().trim().max(40).optional(),
+  travelDate: z.iso.date().optional(),
   adults: z.coerce.number().int().min(1).max(50).optional(),
   children: z.coerce.number().int().min(0).max(50).optional(),
 });
