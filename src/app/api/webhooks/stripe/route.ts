@@ -123,6 +123,15 @@ async function findSessionOrder(payload: Payload, session: Stripe.Checkout.Sessi
 async function fulfil(payload: Payload, session: Stripe.Checkout.Session): Promise<void> {
   const order = await findSessionOrder(payload, session);
   if (!order || order.status === "paid" || order.status === "confirmed") return;
+  // Cancelled, failed or refunded: staff or an earlier event closed this order,
+  // so money arriving now must not reopen it. Only a human can refund.
+  if (order.status !== "pending") {
+    await notifyStaff(
+      `Payment on inactive order - ${order.orderNumber}`,
+      `Session ${session.id} paid an order that is ${order.status}. Refund it in Stripe.`,
+    ).catch((e) => console.error("staff alert failed", e));
+    return;
+  }
 
   try {
     assertAmountMatches(

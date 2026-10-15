@@ -110,6 +110,14 @@ describe("checkout.session.completed", () => {
     expect(notifyOrderPaid).not.toHaveBeenCalled();
   });
 
+  it("does not resurrect a cancelled order: no paid status, staff told to refund", async () => {
+    h.db.findByID.mockResolvedValueOnce({ ...pendingOrder, status: "cancelled" });
+    await send("checkout.session.completed", session());
+    expect(h.db.update).not.toHaveBeenCalled();
+    expect(notifyOrderPaid).not.toHaveBeenCalled();
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining("inactive"), expect.any(String));
+  });
+
   it("acknowledges an unknown order instead of retrying forever", async () => {
     h.db.findByID.mockResolvedValueOnce(null);
     const res = await send("checkout.session.completed", session());
