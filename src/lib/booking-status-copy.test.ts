@@ -17,10 +17,19 @@ describe("bookingStatusCopy", () => {
   });
 
   it("gives the happy path an empty body and the unhappy paths a distinct message", () => {
-    expect(bookingStatusCopy("paid").body).toBeNull();
+    expect(bookingStatusCopy("confirmed").body).toBeNull();
     expect(bookingStatusCopy("failed").heading).toMatch(/problem/i);
     expect(bookingStatusCopy("cancelled").body).toMatch(/no longer active/i);
     expect(bookingStatusCopy("refunded").body).toMatch(/no longer active/i);
+  });
+});
+
+describe("paid vs confirmed", () => {
+  it("does not call a paid order confirmed before staff check availability", () => {
+    const paid = bookingStatusCopy("paid");
+    expect(paid.heading).toBe("Payment received");
+    expect(paid.body).toMatch(/confirming availability/i);
+    expect(bookingStatusCopy("confirmed").heading).toBe("Your booking is confirmed");
   });
 });
 

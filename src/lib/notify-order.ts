@@ -20,9 +20,9 @@ export async function notifyOrderPaid(order: Order, token: string): Promise<void
   await resend.emails.send({
     from,
     to: order.customerEmail,
-    subject: `Booking confirmed - ${order.orderNumber}`,
+    subject: `Payment received - ${order.orderNumber}`,
     text: [
-      `Thank you. Your booking is confirmed.`,
+      `Thank you, we have received your payment. We are now confirming availability with our partners for your dates, and will be in touch to confirm your booking.`,
       ``,
       `Booking reference: ${order.orderNumber}`,
       `Total paid: ${total}`,
