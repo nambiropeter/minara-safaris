@@ -36,8 +36,19 @@ export function bookingStatusCopy(status: Order["status"]): {
         totalLabel: "Amount",
       };
     case "paid":
+      // Paid is not booked: staff still confirm availability with the supplier.
+      return {
+        heading: "Payment received",
+        body: "Thank you. We are now confirming availability with our partners for your dates, and will be in touch to confirm your booking.",
+        totalLabel: "Total paid",
+      };
     case "confirmed":
     default:
-      return { heading: "Your booking", body: null, totalLabel: "Total paid" };
+      return { heading: "Your booking is confirmed", body: null, totalLabel: "Total paid" };
   }
+}
+
+/** Statuses where a charge exists, so Stripe holds a receipt for it. */
+export function hasReceipt(status: Order["status"]): boolean {
+  return status === "paid" || status === "confirmed" || status === "refunded";
 }

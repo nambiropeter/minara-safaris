@@ -12,12 +12,13 @@ export const runtime = "nodejs";
 
 /**
  * Trust boundary. Note what is absent: there is no `amount` field. The client
- * cannot express a price, so it cannot tamper with one.
+ * cannot express a price, so it cannot tamper with one — and strict objects
+ * reject a request that tries, rather than quietly dropping the field.
  */
-const checkoutSchema = z.object({
+const checkoutSchema = z.strictObject({
   items: z
     .array(
-      z.object({
+      z.strictObject({
         kind: z.literal("package"),
         refId: z.string().trim().min(1).max(64),
         quantity: z.coerce.number().int().min(1).max(50),
@@ -28,7 +29,7 @@ const checkoutSchema = z.object({
   customerName: z.string().trim().min(1).max(200),
   customerEmail: z.email().trim(),
   customerPhone: z.string().trim().max(50).optional(),
-  travelDate: z.string().trim().max(40).optional(),
+  travelDate: z.iso.date().optional(),
   adults: z.coerce.number().int().min(1).max(50).optional(),
   children: z.coerce.number().int().min(0).max(50).optional(),
 });
@@ -105,23 +106,37 @@ export async function POST(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    invoice_creation: { enabled: true },
-    customer_email: data.customerEmail,
-    client_reference_id: String(order.id),
-    metadata: { orderId: String(order.id), bookingToken: token },
-    line_items: priced.items.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: priced.currency.toLowerCase(),
-        unit_amount: item.unitAmount,
-        product_data: { name: item.title },
-      },
-    })),
-    success_url: `${origin}/booking/${token}?paid=1`,
-    cancel_url: `${origin}/packages`,
-  });
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: data.customerEmail,
+      client_reference_id: String(order.id),
+      metadata: { orderId: String(order.id), bookingToken: token },
+      line_items: priced.items.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: priced.currency.toLowerCase(),
+          unit_amount: item.unitAmount,
+          product_data: { name: item.title },
+        },
+      })),
+      success_url: `${origin}/booking/${token}?paid=1`,
+      cancel_url: `${origin}/packages`,
+    });
+  } catch (error) {
+    console.error("stripe checkout session failed", error, { orderId: order.id });
+    // Kept as an audit trail, but never left as a live "pending" order.
+    await payload.update({
+      collection: "orders",
+      id: order.id,
+      data: { status: "failed", staffNotes: "Stripe session could not be created." },
+    });
+    return NextResponse.json(
+      { error: "Payment could not be started. Please try again." },
+      { status: 502 },
+    );
+  }
 
   await payload.update({
     collection: "orders",

@@ -20,17 +20,30 @@ export async function notifyOrderPaid(order: Order, token: string): Promise<void
   await resend.emails.send({
     from,
     to: order.customerEmail,
-    subject: `Booking confirmed - ${order.orderNumber}`,
+    subject: `Payment received - ${order.orderNumber}`,
     text: [
-      `Thank you. Your booking is confirmed.`,
+      `Thank you, we have received your payment. We are now confirming availability with our partners for your dates, and will be in touch to confirm your booking.`,
       ``,
       `Booking reference: ${order.orderNumber}`,
       `Total paid: ${total}`,
       ``,
-      `View your booking and download your invoice:`,
+      `View your booking and payment receipt:`,
       `${site}/booking/${token}`,
       ``,
       `Keep this link — it is private to you and does not expire.`,
     ].join("\n"),
   });
+}
+
+/**
+ * Internal alert to the same inbox that receives enquiries. No-ops until
+ * RESEND_API_KEY, RESEND_FROM_EMAIL and LEADS_NOTIFICATION_EMAIL are set.
+ */
+export async function notifyStaff(subject: string, text: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const to = process.env.LEADS_NOTIFICATION_EMAIL;
+  if (!apiKey || !from || !to) return;
+
+  await new Resend(apiKey).emails.send({ from, to, subject, text });
 }
