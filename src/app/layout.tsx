@@ -3,6 +3,7 @@ import { Figtree, Newsreader } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { AnalyticsListener } from "@/components/analytics-listener";
+import { PALETTE_SCRIPT } from "@/lib/palette";
 import { plausibleDomain, site } from "@/lib/site";
 import "./globals.css";
 
@@ -67,6 +68,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${figtree.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        {/* Before anything paints: restores the Ocean palette if chosen. */}
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }} />
         {/*
           The direction contract has to survive into the emitted markup — a JSX
           comment is stripped by the compiler and audits nothing, so it ships as

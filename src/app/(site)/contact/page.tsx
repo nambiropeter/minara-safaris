@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { EmailCta } from "@/components/email-cta";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
@@ -34,8 +35,9 @@ export default async function ContactPage() {
             anything urgent, WhatsApp reaches us faster.
           </p>
         )}
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <WhatsAppCta />
+          <EmailCta />
         </div>
       </div>
 

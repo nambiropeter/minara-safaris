@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 
 import configPromise from "@payload-config";
+import { fetchInvoicePdf } from "@/lib/invoice";
 import { notifyOrderPaid } from "@/lib/notify-order";
 import { getStripe } from "@/lib/stripe";
 import { assertAmountMatches } from "@/lib/webhook-guards";
@@ -107,7 +108,15 @@ export async function POST(request: Request) {
       // claim above without ever attempting notification again.
       const bookingToken = session.metadata?.bookingToken;
       if (bookingToken) {
-        await notifyOrderPaid(updated, bookingToken).catch(() => {});
+        // Same rule for the invoice: if Stripe hasn't finalised it yet, the
+        // email still goes out with the booking-page download link.
+        const invoicePdf = await fetchInvoicePdf(stripe, session.id)
+          .then(async (res) => (res ? Buffer.from(await res.arrayBuffer()) : null))
+          .catch((error) => {
+            console.error("invoice PDF unavailable for confirmation email", error, { orderId });
+            return null;
+          });
+        await notifyOrderPaid(updated, bookingToken, invoicePdf).catch(() => {});
       }
     } catch (error) {
       console.error("webhook fulfilment failed after claiming event", error, {

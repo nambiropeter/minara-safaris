@@ -35,7 +35,7 @@ Do not build any of the following. If asked "where's X", the answer is "Phase 2,
 - Hotel search/aggregation, flights, transfers as bookable products
 - Custom trip builder / quote workflow inside the app
 - Reviews system (start with static/manually-entered testimonials — see §4.7)
-- Multi-language, multi-currency (see §6 note on price display)
+- Multi-language. (Multi-currency moved into scope 2026-10-15 as a KES/USD display + checkout switch only — see §6 currency note)
 - Mobile app (native or otherwise) — web only, responsive
 - Supplier portal, agent portal, operations console beyond the CMS
 - **A bespoke admin panel or a separate backend service** — see §8. This was in the previous revision and is now explicitly out of scope.
@@ -234,6 +234,8 @@ staff_users     -- provided by the CMS; listed for completeness only
 
 **Currency note:** multi-currency is out of scope, but packages targeting international visitors will need USD. V1 stores one price in one currency with a free-text note; if the client needs dual display, add a `price_from_usd` column rather than a conversion engine.
 
+**Update 2026-10-15:** the client asked for a KES/USD option. Shipped as a visitor-side switcher using one daily-cached rate from exchangerate-api.com (`src/lib/exchange-rates.ts`) — not a conversion engine: two currencies, one rate, converted figures rounded down and labelled as converted, and checkout charges the same converted figure. No other currencies.
+
 ## 7. API Surface
 
 Public:
@@ -331,7 +333,7 @@ Keep a running list here as the client raises features from the original spec, r
 - Agent/supplier portals
 - Reviews, loyalty, referrals
 - Live chat widget (third-party embed, not custom-built)
-- Multi-currency, multi-language
+- Multi-language (KES/USD switching shipped 2026-10-15; further currencies remain out)
 - Granular staff roles and permissions
 
 **Dropped from the roadmap entirely, not deferred:** native mobile app. A purchase most travellers make once or twice a year doesn't earn a place on someone's home screen — responsive web already covers the need without install friction or a second codebase.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { fetchInvoicePdf } from "@/lib/invoice";
 import { findOrderByToken } from "@/lib/orders";
 import { getStripe } from "@/lib/stripe";
 
@@ -23,21 +24,9 @@ export async function GET(
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(
-      order.stripe.checkoutSessionId,
-      { expand: ["invoice"] },
-    );
-
-    const invoice = typeof session.invoice === "object" ? session.invoice : null;
-    const pdfUrl = invoice?.invoice_pdf;
-
-    if (!pdfUrl) {
+    const pdfRes = await fetchInvoicePdf(stripe, order.stripe.checkoutSessionId);
+    if (!pdfRes) {
       return new NextResponse("Invoice not found", { status: 404 });
-    }
-
-    const pdfRes = await fetch(pdfUrl);
-    if (!pdfRes.ok || !pdfRes.body) {
-      return new NextResponse("Failed to retrieve invoice file", { status: 502 });
     }
 
     return new Response(pdfRes.body, {

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { CurrencySwitcher } from "@/components/currency-switcher";
+import { PaletteToggle } from "@/components/palette-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { nav, site } from "@/lib/site";
@@ -101,6 +103,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-4">
+          <CurrencySwitcher className="hidden sm:inline-flex" />
+          <PaletteToggle className="hidden sm:inline-flex" />
           <ThemeToggle />
           <WhatsAppCta size="default" label="WhatsApp" className="hidden lg:inline-flex" />
           <button
@@ -157,6 +161,10 @@ export function SiteHeader() {
               );
             })}
           </ul>
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 border-t border-border px-5 py-3 sm:hidden">
+            <CurrencySwitcher />
+            <PaletteToggle />
+          </div>
         </nav>
       )}
     </header>

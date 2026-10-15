@@ -9,6 +9,7 @@ import { CtaBanner } from "@/components/cta-banner";
 import { Check, MapPin, X } from "@/components/icons";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { PackageCard } from "@/components/package-card";
+import { EmailCta } from "@/components/email-cta";
 import { PriceBlock } from "@/components/price-block";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import {
@@ -158,6 +159,7 @@ export default async function PackageDetailPage({ params }: RouteProps) {
               <BookingForm packageId={pkg.id} packageSlug={pkg.slug} />
             </div>
             <WhatsAppCta context={pkg.title} slug={pkg.slug} className="mt-3 w-full" />
+            <EmailCta context={pkg.title} slug={pkg.slug} className="mt-3 w-full" />
             <Link
               href={`/contact?package=${pkg.id}`}
               className="link-underline mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"

@@ -11,6 +11,8 @@ export const site = {
   tagline: "Ask first. Travel after.",
   /** Unconfirmed. Set NEXT_PUBLIC_WHATSAPP_NUMBER (digits only, country code, no +). */
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
+  /** Unconfirmed. Set NEXT_PUBLIC_CONTACT_EMAIL — the inbox consultants answer from. */
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
   /** Set NEXT_PUBLIC_SITE_URL once the domain is live — used for metadataBase, canonical tags, and sitemap/robots. Falls back to localhost so dev doesn't warn. */
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 } as const;
@@ -41,6 +43,12 @@ export const nav = [
 export function whatsappHref(message: string): string | null {
   if (!site.whatsappNumber) return null;
   return `https://wa.me/${site.whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
+/** Builds a mailto link, or null when no contact email is configured (same rule as WhatsApp). */
+export function emailHref(subject: string, body: string): string | null {
+  if (!site.contactEmail) return null;
+  return `mailto:${site.contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export function formatPrice(amount: number, currency: string): string {

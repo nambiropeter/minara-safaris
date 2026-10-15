@@ -20,6 +20,7 @@ Lead-generation website for a Kenyan/East African safari & tour operator, modell
 | Theming | `next-themes`, class strategy, system default — both themes are designed, not inverted |
 | Media | Cloudflare R2 (S3-compatible, `@payloadcms/storage-s3`) via `next/image` — decided over Cloudinary; Next's own Image Optimization API already handles resizing, so Cloudinary's transform pipeline added nothing |
 | Email | Resend |
+| Exchange rates | exchangerate-api.com, KES base, cached 24h via `fetch` revalidate (`src/lib/exchange-rates.ts`) — never fetched per visit or from the browser |
 | Analytics | Plausible (preferred) or GA4 |
 | Validation | Zod, at the `POST /api/leads` trust boundary only — not for CMS-shaped data, which Payload already validates/types |
 | Package manager | pnpm |
@@ -52,8 +53,10 @@ Payload/Next 16 compatibility was verified 2026-08-10 (PRD §8.3). Payload 4 is 
 - Touch targets ≥44px. `Button` `size="cta"` exists because shadcn's scale tops out at 36px.
 - Public pages live in `src/app/(site)/`, which owns the header/footer/mobile-CTA shell. The root layout is html/body/fonts/theme only, so Payload's `(payload)` admin doesn't inherit site chrome.
 - Images are capped at 2400px/q82 in two places that must stay in sync: `Media.upload.resizeOptions` (admin uploads, sharp in-process, runs before the file reaches R2) and `pnpm optimize:images` (local files in `public/images`). No `imageSizes` variants — next/image owns delivery sizing, and R2 transforms nothing.
+- KES/USD conversion goes through `convertPrice` only — display (`DisplayPrice`) and `POST /api/checkout` share it so the charged figure equals the shown one. The browser sends a currency code, never a rate. Preference is localStorage, not a cookie, to keep pages static.
+- Palettes: Sunset (default, no attribute) and Ocean (`data-palette="ocean"` on `<html>`, set pre-paint by `PALETTE_SCRIPT`). Ocean overrides must be scoped `:not(.dark)` / `.dark` or they outrank dark mode.
 - Money in the catalogue (package/destination pages) is rendered by `PriceBlock` and nothing else. Settled order figures (the booking page, confirmation email) render via `formatMoney` from `src/lib/money.ts` instead — a fixed historical amount is a different thing from a live catalogue price, and doesn't carry `price_note`/resident-rate context. Server reads go through `src/lib/content.ts` (Payload local API), never `fetch`.
-- Scope discipline is the point of this project. If a request sounds like Phase 2 (payments, accounts, booking, reviews, multi-currency), check PRD §9 before building it.
+- Scope discipline is the point of this project. If a request sounds like Phase 2 (accounts, reviews, currencies beyond KES/USD), check PRD §9 before building it.
 - Prefer deleting to adding. The PRD was already cut down once from a three-service design.
 - Free-text slug fields (`Articles`, `Packages`, `Destinations`) use the shared `slugField()` factory (`src/fields/slug.mts`), a `beforeValidate` hook that auto-fills from the source field and normalizes whatever's typed — Payload has no built-in slug type. `Pages` is excluded; its slug is a fixed `select`, not free text.
 

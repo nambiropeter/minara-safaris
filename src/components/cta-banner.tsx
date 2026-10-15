@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { EmailCta } from "@/components/email-cta";
 import { Button } from "@/components/ui/button";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 
@@ -27,6 +28,7 @@ export function CtaBanner({
         <p className="measure mt-3 text-muted-foreground">{description}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <WhatsAppCta context={whatsappContext} label={whatsappLabel} />
+          <EmailCta context={whatsappContext} />
           <Button render={<Link href={secondaryHref} />} variant="outline" size="cta">
             {secondaryLabel}
           </Button>

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { EmailCta } from "@/components/email-cta";
 import { RouteMap } from "@/components/route-map";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import { nav, site } from "@/lib/site";
@@ -46,7 +47,10 @@ export function SiteFooter() {
               is planned with a consultant - we don&rsquo;t sell anything you
               can&rsquo;t ask a question about first.
             </p>
-            <WhatsAppCta label="Chat with a consultant" className="mt-6" />
+            <div className="mt-6 flex flex-wrap gap-3">
+              <WhatsAppCta label="Chat with a consultant" />
+              <EmailCta />
+            </div>
           </div>
 
           <nav aria-label="Footer">

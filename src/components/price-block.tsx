@@ -1,5 +1,5 @@
+import { ConversionNote, DisplayPrice } from "@/components/display-price";
 import type { Package } from "@/payload-types";
-import { formatPrice } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
  * resident rate travel with the number by construction rather than by
  * discipline. Both fields are `required` in the CMS; this component is what
  * makes that guarantee visible.
+ *
+ * Figures render through `DisplayPrice`, which honours the visitor's KES/USD
+ * choice; when a figure is converted, `ConversionNote` says so.
  */
 export function PriceBlock({
   pkg,
@@ -33,20 +36,21 @@ export function PriceBlock({
             isDetail ? "text-title" : "text-heading",
           )}
         >
-          {formatPrice(pkg.priceFrom, currency)}
+          <DisplayPrice amount={pkg.priceFrom} currency={currency} />
         </span>
       </p>
       <p className="text-label text-muted-foreground">{pkg.priceNote}</p>
       {typeof pkg.priceResident === "number" && (
         <p className="text-label">
           <span className="font-medium tabular-nums">
-            {formatPrice(pkg.priceResident, currency)}
+            <DisplayPrice amount={pkg.priceResident} currency={currency} />
           </span>{" "}
           <span className="text-muted-foreground">
             for Kenyan and East African residents
           </span>
         </p>
       )}
+      <ConversionNote currency={currency} />
     </div>
   );
 }

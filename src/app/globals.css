@@ -158,6 +158,76 @@
   --sidebar-ring: oklch(0.66 0.145 48);
 }
 
+/* Ocean palette. Sunset (the warm sienna above) is the default; a visitor can switch
+   to Ocean with the palette toggle, which sets `data-palette` on <html>. Only the hued
+   tokens move — gold and whatsapp stay put, and the blue primary (hue 242) sits far
+   enough from whatsapp green (hue 165) that green still means "the WhatsApp button".
+   `:not(.dark)` is load-bearing: without it these light values would outrank `.dark`.
+   Verified light: fg/bg 17.1, muted/bg 5.8, primary/bg 6.2, white-on-primary 6.2.
+   Verified dark: fg/bg 17.1, muted/bg 8.5, primary/bg 8.0, ink-on-primary 8.0,
+   ink/gold 11.0, ink/whatsapp 8.3, ink/destructive 4.9. */
+:root[data-palette="ocean"]:not(.dark) {
+  --background: oklch(0.987 0.006 225);
+  --foreground: oklch(0.21 0.025 245);
+  --card-foreground: oklch(0.21 0.025 245);
+  --popover-foreground: oklch(0.21 0.025 245);
+  --primary: oklch(0.48 0.125 242);
+  --primary-foreground: oklch(0.99 0.004 225);
+  --secondary: oklch(0.955 0.01 225);
+  --secondary-foreground: oklch(0.21 0.025 245);
+  --muted: oklch(0.96 0.008 225);
+  --muted-foreground: oklch(0.5 0.03 240);
+  --accent: oklch(0.95 0.018 225);
+  --accent-foreground: oklch(0.21 0.025 245);
+  --border: oklch(0.9 0.012 230);
+  --input: oklch(0.9 0.012 230);
+  --ring: oklch(0.48 0.125 242);
+  --chart-1: oklch(0.48 0.125 242);
+  --chart-4: oklch(0.65 0.08 215);
+  --chart-5: oklch(0.5 0.03 240);
+  --sidebar: oklch(0.975 0.008 225);
+  --sidebar-foreground: oklch(0.21 0.025 245);
+  --sidebar-primary: oklch(0.48 0.125 242);
+  --sidebar-primary-foreground: oklch(0.99 0.004 225);
+  --sidebar-accent: oklch(0.95 0.018 225);
+  --sidebar-accent-foreground: oklch(0.21 0.025 245);
+  --sidebar-border: oklch(0.9 0.012 230);
+  --sidebar-ring: oklch(0.48 0.125 242);
+}
+
+:root[data-palette="ocean"].dark {
+  --background: oklch(0.16 0.022 245);
+  --foreground: oklch(0.955 0.01 225);
+  --card: oklch(0.235 0.026 245);
+  --card-foreground: oklch(0.955 0.01 225);
+  --popover: oklch(0.235 0.026 245);
+  --popover-foreground: oklch(0.955 0.01 225);
+  --primary: oklch(0.72 0.12 235);
+  --primary-foreground: oklch(0.16 0.022 245);
+  --secondary: oklch(0.285 0.026 245);
+  --secondary-foreground: oklch(0.955 0.01 225);
+  --muted: oklch(0.285 0.026 245);
+  --muted-foreground: oklch(0.74 0.025 235);
+  --accent: oklch(0.305 0.032 245);
+  --accent-foreground: oklch(0.955 0.01 225);
+  --gold-foreground: oklch(0.16 0.022 245);
+  --whatsapp-foreground: oklch(0.16 0.022 245);
+  --border: oklch(0.36 0.028 245);
+  --input: oklch(0.36 0.028 245);
+  --ring: oklch(0.72 0.12 235);
+  --chart-1: oklch(0.72 0.12 235);
+  --chart-4: oklch(0.76 0.08 215);
+  --chart-5: oklch(0.74 0.025 235);
+  --sidebar: oklch(0.235 0.026 245);
+  --sidebar-foreground: oklch(0.955 0.01 225);
+  --sidebar-primary: oklch(0.72 0.12 235);
+  --sidebar-primary-foreground: oklch(0.16 0.022 245);
+  --sidebar-accent: oklch(0.305 0.032 245);
+  --sidebar-accent-foreground: oklch(0.955 0.01 225);
+  --sidebar-border: oklch(0.36 0.028 245);
+  --sidebar-ring: oklch(0.72 0.12 235);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
