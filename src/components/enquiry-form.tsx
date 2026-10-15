@@ -42,8 +42,8 @@ export function EnquiryForm({ packages }: Props) {
       travelDates: form.get("travelDates") || undefined,
       travellers: form.get("travellers") || undefined,
       message: form.get("message") || undefined,
-      startedAt,
-      website: form.get("website") || undefined,
+      elapsedMs: Date.now() - startedAt,
+      contactRef: form.get("contactRef") || undefined,
       source: window.location.pathname,
       referrer: document.referrer || undefined,
       utmSource: params.get("utm_source") || undefined,
@@ -86,9 +86,12 @@ export function EnquiryForm({ packages }: Props) {
     <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
       <input
         type="text"
-        name="website"
+        name="contactRef"
+        readOnly
         tabIndex={-1}
         autoComplete="off"
+        data-1p-ignore
+        data-lpignore="true"
         className="sr-only"
         aria-hidden="true"
       />
