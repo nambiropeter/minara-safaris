@@ -70,48 +70,61 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Brand: warm savanna. Primary = burnt sienna (#9f440f), deliberately not green so the
-   WhatsApp CTA stays the only green thing on the page. --gold is for deal/offer badges
-   only — never for hover states, that's what --accent is for. Contrast verified vs
-   --background: ink 17.3, muted-fg 5.8, primary 6.1, white-on-primary 6.4,
-   ink-on-gold 9.4, white-on-whatsapp 5.0. */
+/* Light = Sunset. The page itself is the sky: --sky paints coral → apricot → gold down
+   the top of every page, with a low sun glowing behind the hero, settling into warm
+   cream as you scroll. Primary is a
+   sunset ember (hue 36), deliberately not green so the WhatsApp CTA stays the only
+   green thing on the page. --gold is for deal/offer badges only — never for hover
+   states, that's what --accent (peach) is for. Contrast verified, worst case against
+   the deepest (coral) sky stop: ink 11.1, muted-fg 4.8, primary 4.5, white-on-primary 6.9,
+   ink-on-gold 9.4, white-on-whatsapp 4.8. */
 :root {
-  --background: oklch(0.988 0.004 85);
-  --foreground: oklch(0.205 0.015 60);
+  --sky:
+    radial-gradient(circle 24rem at 78% 30rem, oklch(0.97 0.09 90 / 0.9), transparent 70%),
+    linear-gradient(
+      180deg,
+      oklch(0.87 0.085 25) 0,
+      oklch(0.895 0.095 50) 240px,
+      oklch(0.935 0.08 80) 520px,
+      oklch(0.97 0.035 70) 860px,
+      oklch(0.985 0.014 65) 1200px
+    );
+  --background: oklch(0.985 0.014 65);
+  --foreground: oklch(0.22 0.035 30);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.205 0.015 60);
+  --card-foreground: oklch(0.22 0.035 30);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.205 0.015 60);
-  --primary: oklch(0.5 0.135 45);
-  --primary-foreground: oklch(0.99 0.004 85);
-  --secondary: oklch(0.955 0.008 80);
-  --secondary-foreground: oklch(0.205 0.015 60);
-  --muted: oklch(0.96 0.006 80);
-  --muted-foreground: oklch(0.5 0.015 65);
-  --accent: oklch(0.955 0.012 70);
-  --accent-foreground: oklch(0.205 0.015 60);
+  --popover-foreground: oklch(0.22 0.035 30);
+  --primary: oklch(0.48 0.16 36);
+  --primary-foreground: oklch(0.99 0.006 70);
+  --secondary: oklch(0.955 0.022 55);
+  --secondary-foreground: oklch(0.22 0.035 30);
+  --muted: oklch(0.96 0.016 60);
+  --muted-foreground: oklch(0.45 0.045 35);
+  --accent: oklch(0.95 0.03 50);
+  --accent-foreground: oklch(0.22 0.035 30);
   --gold: oklch(0.8 0.135 75);
   --gold-foreground: oklch(0.205 0.015 60);
   --whatsapp: oklch(0.53 0.11 165);
   --whatsapp-foreground: oklch(0.99 0.004 85);
   --destructive: oklch(0.505 0.196 27);
-  --border: oklch(0.9 0.008 80);
-  --input: oklch(0.9 0.008 80);
-  --ring: oklch(0.5 0.135 45);
-  --chart-1: oklch(0.5 0.135 45);
+  --border: oklch(0.9 0.022 50);
+  --input: oklch(0.9 0.022 50);
+  --ring: oklch(0.48 0.16 36);
+  --chart-1: oklch(0.48 0.16 36);
   --chart-2: oklch(0.8 0.135 75);
   --chart-3: oklch(0.53 0.11 165);
-  --chart-4: oklch(0.65 0.09 55);
-  --chart-5: oklch(0.5 0.015 65);
+  --chart-4: oklch(0.68 0.12 20);
+  --chart-5: oklch(0.45 0.045 35);
   --radius: 0.625rem;
-  --sidebar: oklch(0.975 0.006 80);
-  --sidebar-foreground: oklch(0.205 0.015 60);
-  --sidebar-primary: oklch(0.5 0.135 45);
-  --sidebar-primary-foreground: oklch(0.99 0.004 85);
-  --sidebar-accent: oklch(0.955 0.012 70);
-  --sidebar-accent-foreground: oklch(0.205 0.015 60);
-  --sidebar-border: oklch(0.9 0.008 80);
-  --sidebar-ring: oklch(0.5 0.135 45);
+  --sidebar: oklch(0.975 0.018 60);
+  --sidebar-foreground: oklch(0.22 0.035 30);
+  --sidebar-primary: oklch(0.48 0.16 36);
+  --sidebar-primary-foreground: oklch(0.99 0.006 70);
+  --sidebar-accent: oklch(0.95 0.03 50);
+  --sidebar-accent-foreground: oklch(0.22 0.035 30);
+  --sidebar-border: oklch(0.9 0.022 50);
+  --sidebar-ring: oklch(0.48 0.16 36);
 }
 
 /* Dark is a designed surface, not an inversion: the base is warm near-black (hue 60,
@@ -121,6 +134,7 @@
    Verified: fg/bg 16.8, muted/bg 8.3, primary/bg 5.8, ink/primary 5.8, ink/gold 10.8,
    ink/whatsapp 8.2, ink/destructive 4.8. */
 .dark {
+  --sky: none;
   --background: oklch(0.155 0.009 60);
   --foreground: oklch(0.955 0.008 85);
   --card: oklch(0.235 0.012 60);
@@ -158,74 +172,94 @@
   --sidebar-ring: oklch(0.66 0.145 48);
 }
 
-/* Ocean palette. Sunset (the warm sienna above) is the default; a visitor can switch
-   to Ocean with the palette toggle, which sets `data-palette` on <html>. Only the hued
-   tokens move — gold and whatsapp stay put, and the blue primary (hue 242) sits far
-   enough from whatsapp green (hue 165) that green still means "the WhatsApp button".
+/* Waves (data-palette="ocean", toggled in the header; next-themes owns .dark).
+   Light + waves = a sunset over the sea: the same apricot/rose sky at the top of the
+   page, fading through haze into sea-glass blue as you scroll, with a deep-sea
+   primary and peach hover surfaces carried over from the sunset.
+   Dark + waves = moonlight on the ocean: deep navy night, a cool glow where the moon
+   sits top-right, a silver-blue moonlit primary (ink text on it), and the sea
+   lightening slightly toward the bottom of the page.
+   Blue primaries (hue ~232) stay far from WhatsApp green (hue 165).
    `:not(.dark)` is load-bearing: without it these light values would outrank `.dark`.
-   Verified light: fg/bg 17.1, muted/bg 5.8, primary/bg 6.2, white-on-primary 6.2.
-   Verified dark: fg/bg 17.1, muted/bg 8.5, primary/bg 8.0, ink-on-primary 8.0,
-   ink/gold 11.0, ink/whatsapp 8.3, ink/destructive 4.9. */
+   Verified light, worst case (coral sky stop): fg 11.1, muted 4.7, primary 4.5,
+   white-on-primary 6.9. Verified dark: fg/bg 16.7, fg/moon-glow 9.4, muted 5.1+,
+   primary/bg 11.9, ink-on-primary 11.9, ink/gold 10.9, ink/whatsapp 8.2,
+   ink/destructive 4.8. */
 :root[data-palette="ocean"]:not(.dark) {
-  --background: oklch(0.987 0.006 225);
-  --foreground: oklch(0.21 0.025 245);
-  --card-foreground: oklch(0.21 0.025 245);
-  --popover-foreground: oklch(0.21 0.025 245);
-  --primary: oklch(0.48 0.125 242);
-  --primary-foreground: oklch(0.99 0.004 225);
-  --secondary: oklch(0.955 0.01 225);
-  --secondary-foreground: oklch(0.21 0.025 245);
-  --muted: oklch(0.96 0.008 225);
-  --muted-foreground: oklch(0.5 0.03 240);
-  --accent: oklch(0.95 0.018 225);
-  --accent-foreground: oklch(0.21 0.025 245);
-  --border: oklch(0.9 0.012 230);
-  --input: oklch(0.9 0.012 230);
-  --ring: oklch(0.48 0.125 242);
-  --chart-1: oklch(0.48 0.125 242);
-  --chart-4: oklch(0.65 0.08 215);
-  --chart-5: oklch(0.5 0.03 240);
-  --sidebar: oklch(0.975 0.008 225);
-  --sidebar-foreground: oklch(0.21 0.025 245);
-  --sidebar-primary: oklch(0.48 0.125 242);
-  --sidebar-primary-foreground: oklch(0.99 0.004 225);
-  --sidebar-accent: oklch(0.95 0.018 225);
-  --sidebar-accent-foreground: oklch(0.21 0.025 245);
-  --sidebar-border: oklch(0.9 0.012 230);
-  --sidebar-ring: oklch(0.48 0.125 242);
+  --sky:
+    radial-gradient(circle 24rem at 78% 30rem, oklch(0.97 0.09 90 / 0.9), transparent 70%),
+    linear-gradient(
+      180deg,
+      oklch(0.87 0.085 25) 0,
+      oklch(0.895 0.095 50) 220px,
+      oklch(0.935 0.08 80) 440px,
+      oklch(0.965 0.02 230) 820px,
+      oklch(0.93 0.04 215) 100%
+    );
+  --background: oklch(0.982 0.01 220);
+  --foreground: oklch(0.22 0.03 245);
+  --card-foreground: oklch(0.22 0.03 245);
+  --popover-foreground: oklch(0.22 0.03 245);
+  --primary: oklch(0.45 0.115 232);
+  --primary-foreground: oklch(0.99 0.006 220);
+  --secondary: oklch(0.955 0.018 220);
+  --secondary-foreground: oklch(0.22 0.03 245);
+  --muted: oklch(0.96 0.012 220);
+  --muted-foreground: oklch(0.45 0.04 240);
+  --accent: oklch(0.95 0.03 50);
+  --accent-foreground: oklch(0.22 0.03 245);
+  --border: oklch(0.9 0.018 225);
+  --input: oklch(0.9 0.018 225);
+  --ring: oklch(0.45 0.115 232);
+  --chart-1: oklch(0.45 0.115 232);
+  --chart-4: oklch(0.68 0.12 20);
+  --chart-5: oklch(0.45 0.04 240);
+  --sidebar: oklch(0.975 0.012 220);
+  --sidebar-foreground: oklch(0.22 0.03 245);
+  --sidebar-primary: oklch(0.45 0.115 232);
+  --sidebar-primary-foreground: oklch(0.99 0.006 220);
+  --sidebar-accent: oklch(0.95 0.03 50);
+  --sidebar-accent-foreground: oklch(0.22 0.03 245);
+  --sidebar-border: oklch(0.9 0.018 225);
+  --sidebar-ring: oklch(0.45 0.115 232);
+  --wave: oklch(0.93 0.04 215);
 }
 
 :root[data-palette="ocean"].dark {
-  --background: oklch(0.16 0.022 245);
-  --foreground: oklch(0.955 0.01 225);
-  --card: oklch(0.235 0.026 245);
-  --card-foreground: oklch(0.955 0.01 225);
-  --popover: oklch(0.235 0.026 245);
-  --popover-foreground: oklch(0.955 0.01 225);
-  --primary: oklch(0.72 0.12 235);
-  --primary-foreground: oklch(0.16 0.022 245);
-  --secondary: oklch(0.285 0.026 245);
-  --secondary-foreground: oklch(0.955 0.01 225);
-  --muted: oklch(0.285 0.026 245);
-  --muted-foreground: oklch(0.74 0.025 235);
-  --accent: oklch(0.305 0.032 245);
-  --accent-foreground: oklch(0.955 0.01 225);
-  --gold-foreground: oklch(0.16 0.022 245);
-  --whatsapp-foreground: oklch(0.16 0.022 245);
-  --border: oklch(0.36 0.028 245);
-  --input: oklch(0.36 0.028 245);
-  --ring: oklch(0.72 0.12 235);
-  --chart-1: oklch(0.72 0.12 235);
-  --chart-4: oklch(0.76 0.08 215);
-  --chart-5: oklch(0.74 0.025 235);
-  --sidebar: oklch(0.235 0.026 245);
-  --sidebar-foreground: oklch(0.955 0.01 225);
-  --sidebar-primary: oklch(0.72 0.12 235);
-  --sidebar-primary-foreground: oklch(0.16 0.022 245);
-  --sidebar-accent: oklch(0.305 0.032 245);
-  --sidebar-accent-foreground: oklch(0.955 0.01 225);
-  --sidebar-border: oklch(0.36 0.028 245);
-  --sidebar-ring: oklch(0.72 0.12 235);
+  --sky:
+    radial-gradient(ellipse 50rem 30rem at 88% -4rem, oklch(0.36 0.05 245), transparent 70%),
+    linear-gradient(180deg, oklch(0.165 0.035 258) 0, oklch(0.165 0.035 258) 60%, oklch(0.2 0.05 235) 100%);
+  --background: oklch(0.165 0.035 258);
+  --foreground: oklch(0.95 0.012 240);
+  --card: oklch(0.235 0.04 255);
+  --card-foreground: oklch(0.95 0.012 240);
+  --popover: oklch(0.235 0.04 255);
+  --popover-foreground: oklch(0.95 0.012 240);
+  --primary: oklch(0.84 0.055 235);
+  --primary-foreground: oklch(0.165 0.035 258);
+  --secondary: oklch(0.28 0.042 252);
+  --secondary-foreground: oklch(0.95 0.012 240);
+  --muted: oklch(0.28 0.042 252);
+  --muted-foreground: oklch(0.76 0.03 240);
+  --accent: oklch(0.3 0.045 250);
+  --accent-foreground: oklch(0.95 0.012 240);
+  --gold-foreground: oklch(0.165 0.035 258);
+  --whatsapp-foreground: oklch(0.165 0.035 258);
+  --border: oklch(0.37 0.04 250);
+  --input: oklch(0.37 0.04 250);
+  --ring: oklch(0.84 0.055 235);
+  --chart-1: oklch(0.84 0.055 235);
+  --chart-4: oklch(0.7 0.08 215);
+  --chart-5: oklch(0.76 0.03 240);
+  --sidebar: oklch(0.235 0.04 255);
+  --sidebar-foreground: oklch(0.95 0.012 240);
+  --sidebar-primary: oklch(0.84 0.055 235);
+  --sidebar-primary-foreground: oklch(0.165 0.035 258);
+  --sidebar-accent: oklch(0.3 0.045 250);
+  --sidebar-accent-foreground: oklch(0.95 0.012 240);
+  --sidebar-border: oklch(0.37 0.04 250);
+  --sidebar-ring: oklch(0.84 0.055 235);
+  --wave: oklch(0.26 0.055 238);
 }
 
 @layer base {
@@ -234,11 +268,16 @@
   }
   body {
     @apply bg-background text-foreground transition-colors duration-300;
+    background-image: var(--sky);
+    background-repeat: no-repeat;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
+    /* A colour on <html> stops body's --sky propagating to the viewport canvas,
+       where it would tile once per screen height instead of spanning the page. */
+    background-color: var(--background);
     font-optical-sizing: auto;
   }
   h1,
@@ -249,6 +288,41 @@
   }
   p {
     text-wrap: pretty;
+  }
+}
+
+/* The "waves" of the Ocean palette: two layered swells cresting into the footer,
+   which takes the same --wave colour so sea and footer read as one surface. Each
+   swell is its own pseudo-element so neither mask clips the other. Pure CSS, no
+   image request; in Sunset the divider is not rendered and the footer keeps its band.
+   Footer text on --wave verified: light muted 5.3, dark muted 7.2. */
+@utility wave-divider {
+  display: none;
+  position: relative;
+  height: 3rem;
+  [data-palette="ocean"] & {
+    display: block;
+  }
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--wave);
+  }
+  &::before {
+    opacity: 0.45;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'%3E%3Cpath d='M0 10 C200 34 400 34 600 12 S1000 -6 1200 10 V48 H0Z'/%3E%3C/svg%3E") bottom / 900px 100% repeat-x;
+  }
+  &::after {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'%3E%3Cpath d='M0 28 C150 8 300 8 450 26 S750 46 900 26 S1100 6 1200 22 V48 H0Z'/%3E%3C/svg%3E") bottom / 1200px 100% repeat-x;
+  }
+}
+
+@utility footer-surface {
+  background-color: color-mix(in oklch, var(--secondary) 40%, transparent);
+  [data-palette="ocean"] & {
+    background-color: var(--wave);
   }
 }
 

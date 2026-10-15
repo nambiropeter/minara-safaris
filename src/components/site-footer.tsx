@@ -14,7 +14,10 @@ import { nav, site } from "@/lib/site";
  */
 export function SiteFooter() {
   return (
-    <footer className="bg-secondary/40">
+    <>
+    {/* Swells cresting into the footer; only visible in the Ocean palette. */}
+    <div aria-hidden className="wave-divider" />
+    <footer className="footer-surface">
       <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8">
         {/* Wraps rather than squeezing: three columns only fit side by side
             once there's room for the map. */}
@@ -86,5 +89,6 @@ export function SiteFooter() {
         </div>
       </div>
     </footer>
+    </>
   );
 }
