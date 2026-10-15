@@ -87,6 +87,7 @@ export function EnquiryForm({ packages }: Props) {
       <input
         type="text"
         name="contactRef"
+        readOnly
         tabIndex={-1}
         autoComplete="off"
         data-1p-ignore

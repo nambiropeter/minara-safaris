@@ -46,7 +46,17 @@ export async function POST(request: Request) {
   // but log the reason: a real visitor caught here sees "thanks" and loses their enquiry.
   const dropReason = data.contactRef ? "honeypot" : data.elapsedMs < MIN_SUBMIT_MS ? "too-fast" : null;
   if (dropReason) {
-    console.warn("lead dropped by spam check", { reason: dropReason, elapsedMs: data.elapsedMs });
+    // A honeypot that copies the visitor's own name/email/phone is autofill, not a bot.
+    const copiedValue = data.contactRef?.trim();
+    const copiesField = copiedValue
+      ? (["name", "email", "phone", "travelDates", "message"] as const).find((k) => data[k] === copiedValue)
+      : undefined;
+    console.warn("lead dropped by spam check", {
+      reason: dropReason,
+      elapsedMs: data.elapsedMs,
+      length: data.contactRef?.length,
+      copiesField,
+    });
     return NextResponse.json({ ok: true });
   }
 

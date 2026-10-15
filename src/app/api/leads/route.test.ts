@@ -43,6 +43,14 @@ describe("POST /api/leads", () => {
     );
   });
 
+  it("logs which field a filled honeypot copied, so autofill can be told from a bot", async () => {
+    await post({ ...valid, contactRef: "asha@example.com" });
+    expect(console.warn).toHaveBeenCalledWith(
+      "lead dropped by spam check",
+      expect.objectContaining({ reason: "honeypot", copiesField: "email", length: 16 }),
+    );
+  });
+
   it("silently drops a submission made faster than a person can type, and logs why", async () => {
     const res = await post({ ...valid, elapsedMs: 500 });
     expect(await res.json()).toEqual({ ok: true });
