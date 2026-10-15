@@ -84,7 +84,7 @@ export default async function DestinationDetailPage({ params }: RouteProps) {
               label="Ask about this destination"
               className="mt-6 w-full"
             />
-            <EmailCta context={destination.name} className="mt-3 w-full" />
+            <EmailCta className="mt-3 w-full" />
           </div>
         </aside>
       </div>

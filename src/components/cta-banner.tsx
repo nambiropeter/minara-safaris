@@ -28,7 +28,7 @@ export function CtaBanner({
         <p className="measure mt-3 text-muted-foreground">{description}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <WhatsAppCta context={whatsappContext} label={whatsappLabel} />
-          <EmailCta context={whatsappContext} />
+          <EmailCta />
           <Button render={<Link href={secondaryHref} />} variant="outline" size="cta">
             {secondaryLabel}
           </Button>

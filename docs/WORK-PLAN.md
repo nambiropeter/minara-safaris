@@ -122,7 +122,7 @@ Superseded `docs/PHASE-2-QUOTE.md`'s draft framing below: payments and an order 
 
 - [x] KES/USD switcher — visitor preference in the browser (no accounts), rate from exchangerate-api.com cached 24h server-side, checkout charges in the chosen currency
 - [x] Invoice emailed — Stripe's invoice PDF attached to the confirmation email; booking-page download kept
-- [x] Email as a contact channel beside WhatsApp — `EmailCta`, tracked as `email_click`, hidden until `NEXT_PUBLIC_CONTACT_EMAIL` is set
+- [x] Email as a contact channel beside WhatsApp — `EmailCta` opens the enquiry form (`/contact`, package preselected), tracked as `email_click`; enquiries go to `LEADS_NOTIFICATION_EMAIL` once Resend is configured. Replaced a mailto link, which did nothing on devices with no mail handler
 - [x] Ocean/Sunset palette toggle — Sunset is the existing palette; Ocean is new, both light and dark
 - [ ] Add `email_click`, `currency_switch`, `palette_switch` as Plausible goals
 - [ ] Real-send check of the invoice attachment once Resend env vars land

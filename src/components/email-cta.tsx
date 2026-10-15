@@ -1,40 +1,37 @@
+import Link from "next/link";
+
 import { EnvelopeSimple } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { emailHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  /** Prefills the subject and body. Pass the package title from a package page. */
-  context?: string;
+  /** Preselects this package in the enquiry form (`?package=<id>`). */
+  packageId?: number;
   label?: string;
   size?: "cta" | "default" | "lg";
   className?: string;
-  /** Package slug, so the conversion event can be attributed. */
+  /** Package slug, so the click can be attributed. */
   slug?: string;
 };
 
 /**
- * Email as the second conversion channel, beside WhatsApp. Like the WhatsApp
- * CTA it leaves the site, so it carries `data-analytics-*` for the delegated
- * listener. Outline variant on purpose: green stays WhatsApp's.
- *
- * Renders nothing when no contact email is configured.
+ * Email as the second channel beside WhatsApp. It opens the on-site enquiry
+ * form rather than a mailto link: mailto silently does nothing on devices
+ * with no mail handler, and the form already saves the lead and emails the
+ * team (`notifyLead`). Outline variant on purpose: green stays WhatsApp's.
  */
 export function EmailCta({
-  context,
+  packageId,
   label = "Email us",
   size = "cta",
   className,
   slug,
 }: Props) {
-  const href = context
-    ? emailHref(`Enquiry: ${context}`, `Hi Minara Safaris, I'd like to ask about ${context}.`)
-    : emailHref("Trip enquiry", "Hi Minara Safaris, I'd like help planning a trip.");
-  if (!href) return null;
+  const href = packageId ? `/contact?package=${packageId}` : "/contact";
 
   return (
     <Button
-      render={<a href={href} />}
+      render={<Link href={href} />}
       variant="outline"
       size={size}
       className={cn(className)}

@@ -1,6 +1,5 @@
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingForm } from "@/components/booking-form";
@@ -159,13 +158,7 @@ export default async function PackageDetailPage({ params }: RouteProps) {
               <BookingForm packageId={pkg.id} packageSlug={pkg.slug} />
             </div>
             <WhatsAppCta context={pkg.title} slug={pkg.slug} className="mt-3 w-full" />
-            <EmailCta context={pkg.title} slug={pkg.slug} className="mt-3 w-full" />
-            <Link
-              href={`/contact?package=${pkg.id}`}
-              className="link-underline mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"
-            >
-              Or send an enquiry
-            </Link>
+            <EmailCta packageId={pkg.id} slug={pkg.slug} className="mt-3 w-full" />
           </div>
         </aside>
       </div>
