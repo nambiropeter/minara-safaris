@@ -106,23 +106,38 @@ export async function POST(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    invoice_creation: { enabled: true },
-    customer_email: data.customerEmail,
-    client_reference_id: String(order.id),
-    metadata: { orderId: String(order.id), bookingToken: token },
-    line_items: priced.items.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: priced.currency.toLowerCase(),
-        unit_amount: item.unitAmount,
-        product_data: { name: item.title },
-      },
-    })),
-    success_url: `${origin}/booking/${token}?paid=1`,
-    cancel_url: `${origin}/packages`,
-  });
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      invoice_creation: { enabled: true },
+      customer_email: data.customerEmail,
+      client_reference_id: String(order.id),
+      metadata: { orderId: String(order.id), bookingToken: token },
+      line_items: priced.items.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: priced.currency.toLowerCase(),
+          unit_amount: item.unitAmount,
+          product_data: { name: item.title },
+        },
+      })),
+      success_url: `${origin}/booking/${token}?paid=1`,
+      cancel_url: `${origin}/packages`,
+    });
+  } catch (error) {
+    console.error("stripe checkout session failed", error, { orderId: order.id });
+    // Kept as an audit trail, but never left as a live "pending" order.
+    await payload.update({
+      collection: "orders",
+      id: order.id,
+      data: { status: "failed", staffNotes: "Stripe session could not be created." },
+    });
+    return NextResponse.json(
+      { error: "Payment could not be started. Please try again." },
+      { status: 502 },
+    );
+  }
 
   await payload.update({
     collection: "orders",

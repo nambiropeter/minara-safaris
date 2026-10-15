@@ -83,4 +83,16 @@ describe("POST /api/checkout", () => {
     await post(validBody);
     expect(h.db.create.mock.calls[0][0].data.amountTotal).toBe(200000);
   });
+
+  it("marks the order failed and returns 502 when Stripe errors", async () => {
+    h.sessionsCreate.mockRejectedValueOnce(new Error("stripe down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await post(validBody);
+
+    expect(res.status).toBe(502);
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7, data: expect.objectContaining({ status: "failed" }) }),
+    );
+  });
 });
