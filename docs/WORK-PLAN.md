@@ -125,7 +125,7 @@ Superseded `docs/PHASE-2-QUOTE.md`'s draft framing below: payments and an order 
 - [x] Email as a contact channel beside WhatsApp — `EmailCta` opens the enquiry form (`/contact`, package preselected), tracked as `email_click`; enquiries are emailed via Formspree. Replaced a mailto link, which did nothing on devices with no mail handler
 - [x] Ocean/Sunset palette toggle — Sunset is the existing palette; Ocean is new, both light and dark
 - [ ] Add `email_click`, `currency_switch`, `palette_switch` as Plausible goals
-- [ ] Real-send check of the invoice attachment once Resend env vars land
+- [x] Real-send check of the invoice attachment — verified 2026-10-15: Stripe test booking → webhook 200 → Resend delivered "Booking confirmed" with Invoice-<ref>.pdf attached (sender onboarding@resend.dev; production needs a verified domain)
 - [ ] "When someone logs in" — traveller accounts are still unbuilt; the currency choice is per-browser until they exist
 
 ## Phase 2 (post-launch, partially superseded — see above)
