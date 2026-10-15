@@ -91,7 +91,7 @@ function Hero() {
     <section className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-14 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10 lg:pt-16 lg:pb-24">
       <div className="lg:col-span-5">
         <h1 className="text-display">
-          Safaris across Kenya and East Africa.
+          Safaris across the world.
         </h1>
         <p className="measure mt-6 text-lead text-muted-foreground">
           Browse the trips we book most, then message the consultant who&rsquo;ll
