@@ -84,11 +84,10 @@ These are the acceptance criteria, not aspirations.
 POST /api/checkout              Zod-validated. Creates Order(pending), creates Stripe
                                 Checkout Session with metadata.orderId, returns session URL.
 POST /api/webhooks/stripe       runtime = 'nodejs'. Raw body. Signature + idempotency.
-                                Handles checkout.session.completed,
-                                checkout.session.async_payment_failed,
-                                charge.refunded.
+                                Handles checkout.session.completed, .async_payment_succeeded,
+                                .async_payment_failed, .expired, and charge.refunded.
 GET  /booking/[token]           Page (not API). force-dynamic, noindex.
-GET  /api/booking/[token]/invoice   Presigned R2 URL, short expiry.
+GET  /api/booking/[token]/receipt   303 to the Stripe-hosted receipt (decided 2026-10-15).
 ```
 
 Zod applies at these two POST boundaries only — Payload already validates CMS-shaped data
@@ -113,6 +112,8 @@ the lead form and is too strict for checkout — parameterise it rather than wri
 Set Stripe's `success_url` to this same link so the customer lands on their booking immediately.
 
 ### A.6 Invoice and email
+
+> **Superseded 2026-10-15:** customers receive Stripe's hosted receipt instead of a generated invoice. Revisit only if the VAT/TOMS answer requires wording Stripe can't carry.
 
 Invoice PDF generated on payment confirmation, stored in R2 through the existing
 `@payloadcms/storage-s3` setup, served only by presigned URL from the token-guarded route. Never a
