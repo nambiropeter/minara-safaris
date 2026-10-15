@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bookingStatusCopy } from "@/lib/booking-status-copy";
+import { bookingStatusCopy, hasReceipt } from "@/lib/booking-status-copy";
 
 describe("bookingStatusCopy", () => {
   it("only claims 'Total paid' for paid/confirmed orders", () => {
@@ -21,5 +21,19 @@ describe("bookingStatusCopy", () => {
     expect(bookingStatusCopy("failed").heading).toMatch(/problem/i);
     expect(bookingStatusCopy("cancelled").body).toMatch(/no longer active/i);
     expect(bookingStatusCopy("refunded").body).toMatch(/no longer active/i);
+  });
+});
+
+describe("hasReceipt", () => {
+  it("is true once money has been taken, including after staff confirm", () => {
+    expect(hasReceipt("paid")).toBe(true);
+    expect(hasReceipt("confirmed")).toBe(true);
+    expect(hasReceipt("refunded")).toBe(true);
+  });
+
+  it("is false when nothing was charged", () => {
+    expect(hasReceipt("pending")).toBe(false);
+    expect(hasReceipt("failed")).toBe(false);
+    expect(hasReceipt("cancelled")).toBe(false);
   });
 });

@@ -41,3 +41,8 @@ export function bookingStatusCopy(status: Order["status"]): {
       return { heading: "Your booking", body: null, totalLabel: "Total paid" };
   }
 }
+
+/** Statuses where a charge exists, so Stripe holds a receipt for it. */
+export function hasReceipt(status: Order["status"]): boolean {
+  return status === "paid" || status === "confirmed" || status === "refunded";
+}

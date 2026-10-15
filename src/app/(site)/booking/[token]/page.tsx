@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { bookingStatusCopy } from "@/lib/booking-status-copy";
+import { bookingStatusCopy, hasReceipt } from "@/lib/booking-status-copy";
 import { formatMoney, type Currency } from "@/lib/money";
 import { findOrderByToken } from "@/lib/orders";
 import { buttonVariants } from "@/components/ui/button";
@@ -50,14 +50,13 @@ export default async function BookingPage({
         </div>
       </dl>
 
-      {order.status === "paid" && (
+      {hasReceipt(order.status) && order.stripe?.paymentIntentId && (
         <div className="mt-8">
           <a
-            href={`/api/booking/${token}/invoice`}
-            download
+            href={`/api/booking/${token}/receipt`}
             className={buttonVariants({ variant: "outline" })}
           >
-            Download invoice (PDF)
+            View payment receipt
           </a>
         </div>
       )}
