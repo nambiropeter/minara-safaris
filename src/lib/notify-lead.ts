@@ -17,6 +17,8 @@ export async function notifyLead(lead: Lead): Promise<void> {
   await resend.emails.send({
     from,
     to,
+    // So a consultant hitting Reply writes to the customer, not back to the sending address.
+    replyTo: lead.email,
     subject: `New enquiry: ${lead.name}`,
     text: [
       `Name: ${lead.name}`,
