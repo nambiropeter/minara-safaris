@@ -16,8 +16,10 @@ const leadSchema = z.object({
   travelDates: z.string().trim().max(200).optional(),
   travellers: z.coerce.number().int().min(1).max(50).optional(),
   message: z.string().trim().max(4000).optional(),
-  startedAt: z.coerce.number(),
-  website: z.string().optional(),
+  /** ms the visitor spent on the form, measured on their own clock so clock drift can't fake a bot. */
+  elapsedMs: z.coerce.number(),
+  /** Honeypot. Named to look unremarkable so browsers and password managers don't autofill it. */
+  contactRef: z.string().optional(),
   source: z.string().max(300).optional(),
   referrer: z.string().max(500).optional(),
   utmSource: z.string().max(200).optional(),
@@ -40,8 +42,11 @@ export async function POST(request: Request) {
   }
   const data = parsed.data;
 
-  // Honeypot + minimum time-to-submit. Reply success so bots don't learn to adapt.
-  if (data.website || Date.now() - data.startedAt < MIN_SUBMIT_MS) {
+  // Honeypot + minimum time-to-submit. Reply success so bots don't learn to adapt,
+  // but log the reason: a real visitor caught here sees "thanks" and loses their enquiry.
+  const dropReason = data.contactRef ? "honeypot" : data.elapsedMs < MIN_SUBMIT_MS ? "too-fast" : null;
+  if (dropReason) {
+    console.warn("lead dropped by spam check", { reason: dropReason, elapsedMs: data.elapsedMs });
     return NextResponse.json({ ok: true });
   }
 
