@@ -67,7 +67,7 @@ Execution tracker. Scope lives in `docs/PRD.md`; stack and invariants in `CLAUDE
 - [x] Enquiry form (`src/components/enquiry-form.tsx`) — honeypot, validation, package auto-fill via `?package=<id>` query param (read on `/contact`, linked from package detail pages' "Or send an enquiry")
 - [x] `POST /api/leads` (`src/app/api/leads/route.ts`) — Zod schema (incl. `.trim()` on `name`/`email`), honeypot (`website` field), min-time-to-submit (3s), per-IP rate limit (`src/lib/rate-limit.ts`)
 - [x] UTM/referrer capture persisted on the lead — form captures and forwards `utm.*`/`referrer`/`source`
-- [x] Resend notification wired (`src/lib/notify-lead.ts`) — no-ops until `RESEND_API_KEY`/`RESEND_FROM_EMAIL`/`LEADS_NOTIFICATION_EMAIL` are set (blocked on client, see below); not yet verified with a real send
+- [x] Lead notification wired (`src/lib/notify-lead.ts`) — forwarded to Formspree (`FORMSPREE_FORM_ID`) since 2026-10-15, replacing Resend for leads; endpoint verified with a real submission
 - [x] Confirmation state after submit — enquiry form shows a done state; `trackEvent("form_submit", ...)` fires alongside it
 - [x] Leads inbox usable in Payload admin, `status` field (new/contacted/closed) with `defaultColumns` incl. status — access locked to authenticated staff only
 
@@ -122,7 +122,7 @@ Superseded `docs/PHASE-2-QUOTE.md`'s draft framing below: payments and an order 
 
 - [x] KES/USD switcher — visitor preference in the browser (no accounts), rate from exchangerate-api.com cached 24h server-side, checkout charges in the chosen currency
 - [x] Invoice emailed — Stripe's invoice PDF attached to the confirmation email; booking-page download kept
-- [x] Email as a contact channel beside WhatsApp — `EmailCta` opens the enquiry form (`/contact`, package preselected), tracked as `email_click`; enquiries go to `LEADS_NOTIFICATION_EMAIL` once Resend is configured. Replaced a mailto link, which did nothing on devices with no mail handler
+- [x] Email as a contact channel beside WhatsApp — `EmailCta` opens the enquiry form (`/contact`, package preselected), tracked as `email_click`; enquiries are emailed via Formspree. Replaced a mailto link, which did nothing on devices with no mail handler
 - [x] Ocean/Sunset palette toggle — Sunset is the existing palette; Ocean is new, both light and dark
 - [ ] Add `email_click`, `currency_switch`, `palette_switch` as Plausible goals
 - [ ] Real-send check of the invoice attachment once Resend env vars land
@@ -138,6 +138,7 @@ Draft scope + price in `docs/PHASE-2-QUOTE.md` — payments (Flutterwave/Paystac
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-10-15 | Enquiry emails via Formspree instead of Resend | Owner's call: a Formspree form (inbox set in its dashboard) needs no sending domain to verify. The browser still posts to our own `/api/leads` — honeypot, rate limit and Payload save stay ours — and the server forwards vetted leads to Formspree. Resend stays for booking confirmations, which Formspree can't do (it only emails the form owner, and can't attach the invoice PDF) |
 | 2026-10-15 | KES/USD via one daily-cached exchangerate-api.com rate; switcher state in localStorage, not a cookie; converted prices floored to whole units by one shared `convertPrice` used by both display and checkout | Cookie-based currency would make every catalogue page dynamic (LCP on 4G). One shared conversion function means the charged figure is the displayed figure. Rate cached via `fetch` `next.revalidate` (24h) per Leo's guidance — no per-visit fetch, no new DB table/migration. Charged rate is recorded in the order's `staffNotes` |
 | 2026-10-15 | Invoice email attaches Stripe's own invoice PDF rather than a custom template | Stripe already generates the invoice (`invoice_creation`, shipped 2026-09-14). The UK VAT/TOMS question on a custom invoice template (Task 12) is still open with the accountant — this doesn't answer it |
 | 2026-10-15 | Ocean palette added as a `data-palette` toggle alongside light/dark rather than replacing Sunset | Keeps the designed sienna palette as the default; ocean primary at hue ~240 stays clearly distinct from WhatsApp green (hue 165). Contrast verified ≥4.5:1 in both modes |
