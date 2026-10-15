@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { getPayload } from "payload";
+import { getPayload, type Payload } from "payload";
+import type Stripe from "stripe";
 
 import configPromise from "@payload-config";
-import { notifyOrderPaid } from "@/lib/notify-order";
+import { formatMoney, type Currency } from "@/lib/money";
+import { notifyOrderPaid, notifyStaff } from "@/lib/notify-order";
 import { getStripe } from "@/lib/stripe";
 import { assertAmountMatches } from "@/lib/webhook-guards";
 
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
   // Must be the unparsed body. Any JSON parsing before this breaks verification.
   const rawBody = await request.text();
 
-  let event;
+  let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, secret);
   } catch {
@@ -39,7 +41,6 @@ export async function POST(request: Request) {
 
   const payload = await getPayload({ config: configPromise });
 
-  // Claim the event before doing any work. A duplicate key means a retry.
   let claimedEvent;
   try {
     claimedEvent = await payload.create({
@@ -47,88 +48,122 @@ export async function POST(request: Request) {
       data: { eventId: event.id, type: event.type },
     });
   } catch (error) {
-    // Could be a genuine unique-constraint duplicate (correct to no-op) or a
-    // transient DB error (NOT a duplicate — should have retried). We don't
-    // trust-fall into distinguishing those from the error shape, but we do
-    // log so an operator can tell the two apart after the fact.
+    // Only a row that already exists makes this a retry. Anything else (a
+    // dropped connection) must 500 so Stripe redelivers, or the payment is lost.
+    const existing = await payload
+      .find({
+        collection: "processed-events",
+        where: { eventId: { equals: event.id } },
+        limit: 1,
+        depth: 0,
+      })
+      .catch(() => null);
+    if (existing?.docs.length) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
     console.error("processed-events claim failed", error, { eventId: event.id });
-    return NextResponse.json({ received: true, duplicate: true });
+    return NextResponse.json({ error: "Could not record event." }, { status: 500 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const orderId = session.metadata?.orderId;
-    if (!orderId) return NextResponse.json({ received: true });
-
-    // Delayed-notification payment methods (SEPA, Bacs, us_bank_account,
-    // konbini, ...) fire this event with payment_status "unpaid" and only
-    // succeed later via checkout.session.async_payment_succeeded. Nothing
-    // handles that event yet, so just ignore what we can't fulfil correctly.
-    if (session.payment_status !== "paid") {
-      return NextResponse.json({ received: true });
-    }
-
+  try {
+    await handleEvent(payload, event);
+  } catch (error) {
+    console.error("webhook handling failed after claiming event", error, { eventId: event.id });
+    // Un-claim so a genuine retry can re-attempt instead of being swallowed
+    // as a duplicate.
     try {
-      const order = await payload.findByID({ collection: "orders", id: orderId, depth: 0 });
-
-      try {
-        assertAmountMatches(
-          { amount_total: session.amount_total, currency: session.currency },
-          { amountTotal: order.amountTotal, currency: order.currency },
-        );
-      } catch (error) {
-        await payload.update({
-          collection: "orders",
-          id: orderId,
-          data: {
-            status: "failed",
-            staffNotes: `${order.staffNotes ?? ""}\nPayment refused: ${(error as Error).message}`.trim(),
-          },
-        });
-        return NextResponse.json({ received: true, refused: true });
-      }
-
-      const updated = await payload.update({
-        collection: "orders",
-        id: orderId,
-        data: {
-          status: "paid",
-          customerEmail: session.customer_details?.email ?? order.customerEmail,
-          stripe: {
-            checkoutSessionId: session.id,
-            paymentIntentId:
-              typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-          },
-        },
-      });
-
-      // A failed send must never fail the webhook response: Stripe would
-      // retry, and the retry would be swallowed by the processed-events
-      // claim above without ever attempting notification again.
-      const bookingToken = session.metadata?.bookingToken;
-      if (bookingToken) {
-        await notifyOrderPaid(updated, bookingToken).catch(() => {});
-      }
-    } catch (error) {
-      console.error("webhook fulfilment failed after claiming event", error, {
+      await payload.delete({ collection: "processed-events", id: claimedEvent.id });
+    } catch (deleteError) {
+      console.error("failed to un-claim processed-event after handling error", deleteError, {
         eventId: event.id,
-        orderId,
       });
-      // Un-claim so a genuine retry can re-attempt fulfilment instead of
-      // being swallowed as a duplicate.
-      try {
-        await payload.delete({
-          collection: "processed-events",
-          id: claimedEvent.id,
-        });
-      } catch (deleteError) {
-        console.error("failed to un-claim processed-event after fulfilment error", deleteError, {
-          eventId: event.id,
-        });
-      }
-      return NextResponse.json({ error: "Internal error processing webhook." }, { status: 500 });
     }
+    return NextResponse.json({ error: "Internal error processing webhook." }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function handleEvent(payload: Payload, event: Stripe.Event): Promise<void> {
+  switch (event.type) {
+    case "checkout.session.completed":
+      // Delayed methods (Bacs, SEPA) complete "unpaid" and settle later.
+      if (event.data.object.payment_status === "paid") {
+        await fulfil(payload, event.data.object);
+      }
+      return;
+  }
+}
+
+async function findSessionOrder(payload: Payload, session: Stripe.Checkout.Session) {
+  const orderId = session.metadata?.orderId;
+  if (!orderId) return null;
+  const order = await payload.findByID({
+    collection: "orders",
+    id: orderId,
+    depth: 0,
+    disableErrors: true,
+  });
+  // A retry can't make a missing order appear, so log and acknowledge.
+  if (!order) console.error("webhook for unknown order", { orderId, sessionId: session.id });
+  return order;
+}
+
+async function fulfil(payload: Payload, session: Stripe.Checkout.Session): Promise<void> {
+  const order = await findSessionOrder(payload, session);
+  if (!order || order.status === "paid" || order.status === "confirmed") return;
+
+  try {
+    assertAmountMatches(
+      { amount_total: session.amount_total, currency: session.currency },
+      { amountTotal: order.amountTotal, currency: order.currency },
+    );
+  } catch (error) {
+    const reason = (error as Error).message;
+    await payload.update({
+      collection: "orders",
+      id: order.id,
+      data: { status: "failed", staffNotes: appendNote(order.staffNotes, `Payment refused: ${reason}`) },
+    });
+    await notifyStaff(
+      `Payment refused - ${order.orderNumber}`,
+      `${reason}\nStripe session: ${session.id}`,
+    ).catch((e) => console.error("staff alert failed", e));
+    return;
+  }
+
+  const updated = await payload.update({
+    collection: "orders",
+    id: order.id,
+    data: {
+      status: "paid",
+      customerEmail: session.customer_details?.email ?? order.customerEmail,
+      stripe: {
+        checkoutSessionId: session.id,
+        paymentIntentId:
+          typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+      },
+    },
+  });
+
+  // A failed send must never fail the webhook: the retry would be swallowed
+  // as a duplicate without ever attempting the email again.
+  const bookingToken = session.metadata?.bookingToken;
+  if (bookingToken) {
+    await notifyOrderPaid(updated, bookingToken).catch((e) =>
+      console.error("booking confirmation email failed", e, { orderId: order.id }),
+    );
+  }
+  await notifyStaff(
+    `New paid booking - ${updated.orderNumber}`,
+    [
+      `${updated.customerName ?? ""} <${updated.customerEmail}>`,
+      `Total: ${formatMoney(updated.amountTotal, updated.currency as Currency)}`,
+      ...updated.items.map((i) => `${i.title} x${i.quantity}`),
+    ].join("\n"),
+  ).catch((e) => console.error("staff alert failed", e));
+}
+
+function appendNote(notes: string | null | undefined, line: string): string {
+  return `${notes ?? ""}\n${line}`.trim();
 }

@@ -34,3 +34,16 @@ export async function notifyOrderPaid(order: Order, token: string): Promise<void
     ].join("\n"),
   });
 }
+
+/**
+ * Internal alert to the same inbox that receives enquiries. No-ops until
+ * RESEND_API_KEY, RESEND_FROM_EMAIL and LEADS_NOTIFICATION_EMAIL are set.
+ */
+export async function notifyStaff(subject: string, text: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const to = process.env.LEADS_NOTIFICATION_EMAIL;
+  if (!apiKey || !from || !to) return;
+
+  await new Resend(apiKey).emails.send({ from, to, subject, text });
+}
