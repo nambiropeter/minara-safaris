@@ -87,10 +87,21 @@ export async function POST(request: Request) {
 async function handleEvent(payload: Payload, event: Stripe.Event): Promise<void> {
   switch (event.type) {
     case "checkout.session.completed":
-      // Delayed methods (Bacs, SEPA) complete "unpaid" and settle later.
+    case "checkout.session.async_payment_succeeded":
+      // Delayed methods (Bacs, SEPA) complete "unpaid" and settle later via
+      // async_payment_succeeded, which lands here too.
       if (event.data.object.payment_status === "paid") {
         await fulfil(payload, event.data.object);
       }
+      return;
+    case "checkout.session.async_payment_failed":
+      await settlePending(payload, event.data.object, "failed", "Delayed payment failed.");
+      return;
+    case "checkout.session.expired":
+      await settlePending(payload, event.data.object, "cancelled", "Checkout expired unpaid.");
+      return;
+    case "charge.refunded":
+      await recordRefund(payload, event.data.object);
       return;
   }
 }
@@ -161,6 +172,54 @@ async function fulfil(payload: Payload, session: Stripe.Checkout.Session): Promi
       `Total: ${formatMoney(updated.amountTotal, updated.currency as Currency)}`,
       ...updated.items.map((i) => `${i.title} x${i.quantity}`),
     ].join("\n"),
+  ).catch((e) => console.error("staff alert failed", e));
+}
+
+async function settlePending(
+  payload: Payload,
+  session: Stripe.Checkout.Session,
+  status: "failed" | "cancelled",
+  note: string,
+): Promise<void> {
+  const order = await findSessionOrder(payload, session);
+  // Only an unsettled order moves. A late event must never undo a payment.
+  if (!order || order.status !== "pending") return;
+  await payload.update({
+    collection: "orders",
+    id: order.id,
+    data: { status, staffNotes: appendNote(order.staffNotes, note) },
+  });
+}
+
+async function recordRefund(payload: Payload, charge: Stripe.Charge): Promise<void> {
+  const paymentIntentId =
+    typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+  if (!paymentIntentId) return;
+
+  // ponytail: unindexed lookup on stripe.paymentIntentId; index it if orders reach the tens of thousands.
+  const {
+    docs: [order],
+  } = await payload.find({
+    collection: "orders",
+    where: { "stripe.paymentIntentId": { equals: paymentIntentId } },
+    limit: 1,
+    depth: 0,
+  });
+  if (!order) {
+    console.error("refund for unknown order", { paymentIntentId });
+    return;
+  }
+
+  const refunded = formatMoney(charge.amount_refunded, order.currency as Currency);
+  // A partial refund keeps the booking live; staff decide what it means.
+  const data = charge.refunded
+    ? { status: "refunded" as const, staffNotes: appendNote(order.staffNotes, `Refunded in full: ${refunded}.`) }
+    : { staffNotes: appendNote(order.staffNotes, `Partially refunded: ${refunded} so far.`) };
+
+  await payload.update({ collection: "orders", id: order.id, data });
+  await notifyStaff(
+    `Refund - ${order.orderNumber}`,
+    `${charge.refunded ? "Full" : "Partial"} refund recorded: ${refunded}.`,
   ).catch((e) => console.error("staff alert failed", e));
 }
 

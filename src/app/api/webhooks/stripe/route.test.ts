@@ -136,3 +136,49 @@ describe("checkout.session.completed", () => {
     );
   });
 });
+
+describe("payment lifecycle", () => {
+  it("marks paid when a delayed payment succeeds", async () => {
+    await send("checkout.session.async_payment_succeeded", session());
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "paid" }) }),
+    );
+  });
+
+  it("fails a pending order when a delayed payment fails", async () => {
+    await send("checkout.session.async_payment_failed", session({ payment_status: "unpaid" }));
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "failed" }) }),
+    );
+  });
+
+  it("cancels a pending order when checkout expires", async () => {
+    await send("checkout.session.expired", session({ payment_status: "unpaid" }));
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "cancelled" }) }),
+    );
+  });
+
+  it("never lets a late expiry undo a payment", async () => {
+    h.db.findByID.mockResolvedValueOnce({ ...pendingOrder, status: "paid" });
+    await send("checkout.session.expired", session({ payment_status: "unpaid" }));
+    expect(h.db.update).not.toHaveBeenCalled();
+  });
+
+  it("marks a fully refunded order refunded", async () => {
+    h.db.find.mockResolvedValueOnce({ docs: [{ ...pendingOrder, status: "confirmed" }] });
+    await send("charge.refunded", { payment_intent: "pi_1", refunded: true, amount_refunded: 200000 });
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "refunded" }) }),
+    );
+    expect(notifyStaff).toHaveBeenCalled();
+  });
+
+  it("keeps the booking live on a partial refund", async () => {
+    h.db.find.mockResolvedValueOnce({ docs: [{ ...pendingOrder, status: "confirmed" }] });
+    await send("charge.refunded", { payment_intent: "pi_1", refunded: false, amount_refunded: 5000 });
+    const data = h.db.update.mock.calls[0][0].data;
+    expect(data.status).toBeUndefined();
+    expect(data.staffNotes).toContain("Partially refunded");
+  });
+});
