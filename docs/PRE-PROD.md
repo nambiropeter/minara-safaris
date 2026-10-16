@@ -65,6 +65,23 @@ Everything that must be true before real customers touch the site. Tick an item 
       availability with the supplier. `paid` means money received; staff verify with the supplier,
       mark the order `confirmed`, and refund promptly if the date can't be done.
 
+## Hotelbeds
+
+Detail and reasoning for each: `docs/hotelbeds_caveats.md`, section 3. None of this blocks development.
+
+- [ ] **Commercial agreement signed with HBX Group, and certification passed** (CheckRate before booking, cancellation display, error handling, look-to-book). The test key never goes live; this is the gate to real hotel bookings.
+- [ ] Production key and secret in the host's env, and **`HOTELBEDS_BASE_URL` set to the production host**. It defaults to the *test* host, so forgetting it books nothing real.
+- [ ] A margin saved under **Hotel settings** in the admin (the `HOTEL_MARGIN_BPS` env var is only a fallback and should be removed or match).
+- [ ] `pnpm migrate` run on the production DB with the hotel migrations (`packages_accommodation`, `destinations_hotel_destination`, `hotel_settings`, `hotel_supplier`); `pnpm migrate:status` clean. Do not rely on dev-mode push.
+- [ ] **Resend configured, and a real staff alert seen.** A refused or unknown hotel booking alerts staff by email only; a refunded customer is told by email only.
+- [ ] Staff know the unknown-booking procedure: search Hotelbeds for the order number (`clientReference`), and do not refund or rebook until checked.
+- [ ] Look-to-book: decide whether the in-memory cache is enough for the production ratio; if not, restore the Postgres cache and call counters (commit `12a527b`).
+- [ ] Taxes and fees payable at the hotel shown if a real rate carries them; the packaging-rate rule confirmed with Hotelbeds; photo and description usage terms read.
+- [ ] Destination codes re-checked on the production host (Zanzibar returned nothing in the sandbox).
+- [ ] The 2% booking price tolerance accepted, or set to 0.
+- [ ] Hotel seed content removed (`pnpm seed:hotels`: land-only packages, the extra destinations, and the seven CC BY / CC BY-SA placeholder photos). Real land-only package prices set by staff, with lodging excluded from `priceFrom`.
+- [ ] One real production hotel booking made, then cancelled through the admin refund.
+
 ## E2E run log
 
 Record each full run here: date, environment, what was covered, what failed.
