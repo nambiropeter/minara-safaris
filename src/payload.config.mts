@@ -8,8 +8,6 @@ import { fileURLToPath } from 'url'
 
 import { Articles } from './collections/Articles'
 import { Destinations } from './collections/Destinations'
-import { HotelCache } from './collections/HotelCache'
-import { HotelCalls } from './collections/HotelCalls'
 import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
 import { Orders } from './collections/Orders'
@@ -39,7 +37,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads, Orders, ProcessedEvents, HotelCache, HotelCalls],
+  collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads, Orders, ProcessedEvents],
   globals: [HotelSettings],
   editor: lexicalEditor(),
   secret: resolveSecret(),

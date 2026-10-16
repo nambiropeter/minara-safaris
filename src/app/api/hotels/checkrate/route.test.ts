@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   checkRate: vi.fn(),
   getKesRates: vi.fn(),
-  record: vi.fn(),
   settings: { current: { enabled: true, marginBps: 1500 } as { enabled: boolean; marginBps: number | null } },
   config: { current: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
 }));
@@ -16,7 +15,6 @@ vi.mock("@/lib/hotelbeds", async () => ({
 }));
 vi.mock("@/lib/exchange-rates", () => ({ getKesRates: h.getKesRates }));
 vi.mock("@/lib/hotel-settings", () => ({ getHotelSettings: async () => h.settings.current }));
-vi.mock("@/lib/hotel-calls", () => ({ recordHotelCall: h.record }));
 
 import { HotelbedsError } from "@/lib/hotelbeds";
 import { issueSession, SESSION_COOKIE } from "@/lib/hotel-session";
@@ -51,7 +49,6 @@ const checked = (over: Record<string, unknown> = {}) => ({
 describe("POST /api/hotels/checkrate", () => {
   beforeEach(() => {
     h.settings.current = { enabled: true, marginBps: 1500 };
-    h.record.mockReset();
     h.config.current = { apiKey: "k", secret: "s", baseUrl: "https://x" };
     h.checkRate.mockReset();
     h.getKesRates.mockReset();
@@ -67,7 +64,6 @@ describe("POST /api/hotels/checkrate", () => {
   it("passes the rateKey through untouched and returns the reissued key", async () => {
     const response = await call({ rateKey, shownFrom: 1_725_000, currency: "KES" });
     expect(h.checkRate).toHaveBeenCalledWith(expect.anything(), rateKey);
-    expect(h.record).toHaveBeenCalledWith("checkrate");
     const body = await response.json();
     expect(body.rateKey).toBe("REISSUED");
     expect(body.from).toBe(1_725_000);
