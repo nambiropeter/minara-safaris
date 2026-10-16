@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { allowRequest } from "@/lib/rate-limit";
 
@@ -6,6 +6,8 @@ import { allowRequest } from "@/lib/rate-limit";
 const key = (name: string) => `${name}-${Math.random()}`;
 
 describe("allowRequest", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("allows the first five requests for a key", () => {
     const k = key("under-limit");
     for (let i = 1; i <= 5; i++) {
@@ -36,9 +38,14 @@ describe("allowRequest", () => {
   });
 
   it("honours a custom windowMs", () => {
+    // Fake clock: a real 1ms window let the second call slip into the next
+    // millisecond under load and flake.
+    vi.useFakeTimers();
     const k = key("window");
-    const opts = { maxRequests: 1, windowMs: 1 };
+    const opts = { maxRequests: 1, windowMs: 1000 };
     expect(allowRequest(k, opts)).toBe(true);
     expect(allowRequest(k, opts)).toBe(false);
+    vi.advanceTimersByTime(1001);
+    expect(allowRequest(k, opts)).toBe(true);
   });
 });

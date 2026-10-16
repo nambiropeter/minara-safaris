@@ -1,0 +1,121 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const h = vi.hoisted(() => ({
+  db: { findByID: vi.fn(), update: vi.fn() },
+  refundsCreate: vi.fn(),
+}));
+
+vi.mock("@/lib/stripe", () => ({
+  getStripe: vi.fn(() => ({ refunds: { create: h.refundsCreate } })),
+}));
+
+import { refundOrder } from "@/collections/endpoints/refund-order";
+import { getStripe } from "@/lib/stripe";
+
+const order = {
+  id: 7,
+  orderNumber: "MS-2026-TEST",
+  status: "paid",
+  currency: "KES",
+  amountTotal: 5800000,
+  staffNotes: null,
+  stripe: { paymentIntentId: "pi_1" },
+};
+
+function req(over: Record<string, unknown> = {}) {
+  return {
+    user: { id: 1, email: "agent@minara.example" },
+    routeParams: { id: "7" },
+    payload: h.db,
+    ...over,
+  } as never;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  h.db.findByID.mockResolvedValue(order);
+  h.db.update.mockResolvedValue({});
+  h.refundsCreate.mockResolvedValue({ id: "re_1", status: "succeeded" });
+});
+
+describe("refundOrder", () => {
+  it("rejects an unauthenticated caller before touching anything", async () => {
+    const res = await refundOrder(req({ user: null }));
+    expect(res.status).toBe(401);
+    expect(h.db.findByID).not.toHaveBeenCalled();
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("404s an unknown order", async () => {
+    h.db.findByID.mockResolvedValue(null);
+    expect((await refundOrder(req())).status).toBe(404);
+  });
+
+  it.each(["pending", "failed", "cancelled"])("refuses to refund a %s order, because nothing was charged", async (status) => {
+    h.db.findByID.mockResolvedValue({ ...order, status });
+    const res = await refundOrder(req());
+    expect(res.status).toBe(409);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("says so when the order is already refunded, and does not call Stripe", async () => {
+    h.db.findByID.mockResolvedValue({ ...order, status: "refunded" });
+    const res = await refundOrder(req());
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/already been refunded/i);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses an order with no recorded Stripe payment", async () => {
+    h.db.findByID.mockResolvedValue({ ...order, stripe: {} });
+    expect((await refundOrder(req())).status).toBe(409);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("503s when Stripe is not configured", async () => {
+    vi.mocked(getStripe).mockReturnValueOnce(null);
+    expect((await refundOrder(req())).status).toBe(503);
+  });
+
+  it("refunds the whole payment, once-only, and a confirmed order counts as paid", async () => {
+    h.db.findByID.mockResolvedValue({ ...order, status: "confirmed" });
+    const res = await refundOrder(req());
+
+    expect(res.status).toBe(200);
+    expect(h.refundsCreate).toHaveBeenCalledWith(
+      { payment_intent: "pi_1", metadata: { orderId: "7", requestedBy: "agent@minara.example" } },
+      { idempotencyKey: "refund-order-7" },
+    );
+    // No `amount`: Stripe refunds what is left, in full.
+    expect(h.refundsCreate.mock.calls[0][0].amount).toBeUndefined();
+  });
+
+  it("records who asked, but leaves the status to the charge.refunded webhook", async () => {
+    await refundOrder(req());
+    const data = h.db.update.mock.calls[0][0].data;
+    expect(data.status).toBeUndefined();
+    expect(data.staffNotes).toContain("Refund of KES 58,000.00 requested by agent@minara.example");
+  });
+
+  it("still reports success if the audit note cannot be saved, since the money has already moved", async () => {
+    h.db.update.mockRejectedValue(new Error("db down"));
+    const res = await refundOrder(req());
+    expect(res.status).toBe(200);
+  });
+
+  it("maps Stripe's 'already refunded' to a clear 409", async () => {
+    h.refundsCreate.mockRejectedValue(Object.assign(new Error("Charge already refunded"), { code: "charge_already_refunded" }));
+    const res = await refundOrder(req());
+    expect(res.status).toBe(409);
+    expect(h.db.update).not.toHaveBeenCalled();
+  });
+
+  it("passes any other Stripe failure back as a 502 with its message, and writes no note", async () => {
+    h.refundsCreate.mockRejectedValue(new Error("Stripe is down"));
+    const res = await refundOrder(req());
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toBe("Stripe is down");
+    expect(h.db.update).not.toHaveBeenCalled();
+  });
+});

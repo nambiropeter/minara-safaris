@@ -106,7 +106,12 @@ export function BookingForm({ packageId, packageSlug }: Props) {
 
       <label className="flex flex-col gap-1 text-label text-muted-foreground">
         Travel date (optional)
-        <input name="travelDate" type="text" placeholder="e.g. 12 October 2026" maxLength={40} className={inputClass} />
+        <input
+          name="travelDate"
+          type="date"
+          min={new Date().toISOString().slice(0, 10)}
+          className={inputClass}
+        />
       </label>
 
       {status === "error" && <p className="text-sm text-destructive">{errorMessage}</p>}
