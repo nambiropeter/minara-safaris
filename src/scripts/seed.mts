@@ -30,10 +30,10 @@ const images = [
 ] as const
 
 const destinations = [
-  { name: 'Maasai Mara', slug: 'maasai-mara', image: 5 },
-  { name: 'Amboseli', slug: 'amboseli', image: 1 },
-  { name: 'Tsavo', slug: 'tsavo', image: 3 },
-  { name: 'Diani & the coast', slug: 'diani-coast', image: 4 },
+  { name: 'Maasai Mara', slug: 'maasai-mara', image: 5, hotelDestination: 'maasai-mara' },
+  { name: 'Amboseli', slug: 'amboseli', image: 1, hotelDestination: 'amboseli' },
+  { name: 'Tsavo', slug: 'tsavo', image: 3, hotelDestination: 'tsavo' },
+  { name: 'Diani & the coast', slug: 'diani-coast', image: 4, hotelDestination: 'diani' },
 ] as const
 
 type SeedPackage = {
@@ -215,6 +215,7 @@ const seed = async () => {
       data: {
         name: destination.name,
         slug: destination.slug,
+        hotelDestination: destination.hotelDestination,
         coverImage: mediaIds[destination.image],
       },
     })
@@ -227,6 +228,7 @@ const seed = async () => {
       data: {
         title: pkg.title,
         slug: pkg.slug,
+        accommodation: 'included',
         durationDays: pkg.durationDays,
         priceFrom: pkg.priceFrom,
         priceNote: pkg.priceNote,

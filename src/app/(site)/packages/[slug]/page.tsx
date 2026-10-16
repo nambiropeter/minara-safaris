@@ -1,5 +1,6 @@
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingForm } from "@/components/booking-form";
@@ -10,6 +11,7 @@ import { ImageLightbox } from "@/components/image-lightbox";
 import { PackageCard } from "@/components/package-card";
 import { EmailCta } from "@/components/email-cta";
 import { PriceBlock } from "@/components/price-block";
+import { Button } from "@/components/ui/button";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import {
   asMedia,
@@ -17,7 +19,9 @@ import {
   getPackageBySlug,
   getPublishedPackages,
   getRelatedPackages,
+  hotelDestinationSlug,
 } from "@/lib/content";
+import { findHotelDestination } from "@/lib/hotel-destinations";
 import { canonical } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -51,6 +55,10 @@ export default async function PackageDetailPage({ params }: RouteProps) {
   const places = destinationNames(pkg);
   const images = (pkg.images ?? []).map((entry) => asMedia(entry.image)).filter((media) => media !== null);
   const related = await getRelatedPackages(pkg);
+  // Only a "choose your own hotel" package offers a hotel search; with lodging
+  // included there is nothing for a second booking to add.
+  const hotelSlug = hotelDestinationSlug(pkg);
+  const hotelPlace = findHotelDestination(hotelSlug)?.label;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -147,6 +155,22 @@ export default async function PackageDetailPage({ params }: RouteProps) {
                   </ul>
                 </div>
               )}
+            </section>
+          )}
+          {pkg.accommodation === "choose-your-own" && (
+            <section className="mt-10 rounded-xl border border-border bg-secondary/40 p-6">
+              <h2 className="text-title">Choose where you stay</h2>
+              <p className="measure mt-2 text-muted-foreground">
+                This package covers the trip itself. Accommodation is not included, so you can pick a hotel that suits your
+                budget and dates.
+              </p>
+              <Button
+                render={<Link href={hotelSlug ? `/hotels?destination=${hotelSlug}` : "/hotels"} />}
+                size="cta"
+                className="mt-4"
+              >
+                Find a hotel{hotelPlace ? ` in ${hotelPlace}` : ""}
+              </Button>
             </section>
           )}
         </div>

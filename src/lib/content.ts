@@ -93,6 +93,20 @@ export function destinationNames(pkg: Package): string[] {
     .filter((name): name is string => Boolean(name));
 }
 
+/**
+ * Where /hotels should search for a package's guests: the primary destination's
+ * hotel area, else the first destination that has one. Null when none is mapped,
+ * in which case the package page links to the plain search.
+ */
+export function hotelDestinationSlug(pkg: Package): string | null {
+  const entries = [...(pkg.destinations ?? [])].sort((a, b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)));
+  for (const entry of entries) {
+    const slug = asDestination(entry.destination)?.hotelDestination;
+    if (slug) return slug;
+  }
+  return null;
+}
+
 export async function getPackageBySlug(slug: string): Promise<Package | null> {
   const payload = await client();
   const { docs } = await payload.find({

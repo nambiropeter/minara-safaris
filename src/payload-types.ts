@@ -207,6 +207,28 @@ export interface Destination {
     [k: string]: unknown;
   } | null;
   coverImage?: (number | null) | Media;
+  /**
+   * Where /hotels searches for guests on a "choose your own hotel" package that visits here. Leave empty to offer no hotel search.
+   */
+  hotelDestination?:
+    | (
+        | 'nairobi'
+        | 'maasai-mara'
+        | 'mombasa'
+        | 'diani'
+        | 'nakuru'
+        | 'naivasha'
+        | 'amboseli'
+        | 'tsavo'
+        | 'lamu'
+        | 'malindi'
+        | 'zanzibar'
+        | 'arusha'
+        | 'serengeti'
+        | 'ngorongoro'
+        | 'dar-es-salaam'
+      )
+    | null;
   seo?: {
     title?: string | null;
     description?: string | null;
@@ -689,6 +711,7 @@ export interface DestinationsSelect<T extends boolean = true> {
   slug?: T;
   overview?: T;
   coverImage?: T;
+  hotelDestination?: T;
   seo?:
     | T
     | {

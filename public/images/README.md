@@ -26,3 +26,20 @@ The set now runs landscape-heavy, which suits the hero stack and section bands;
 the original four portraits carry the card and tile crops. Worth noting when the
 real shoot is briefed: both orientations are needed, and article covers are not
 covered by anything here.
+
+## Wikimedia Commons additions (hotel-package seed)
+
+Seven more placeholders, used by `pnpm seed:hotels`. Unlike the Pexels set above these are
+**CC BY / CC BY-SA**, so they need attribution wherever they appear, which is one more reason
+they are development-only and must be gone before launch. Source: commons.wikimedia.org,
+file name given as it is titled there.
+
+| File | Commons title | Author | Licence |
+|---|---|---|---|
+| `diani-beach-sunrise.jpg` | Diani Beach Sunrise Kenya.jpg | Łukasz Ciesielski | CC BY-SA 3.0 |
+| `fort-jesus-mombasa.jpg` | Fort Jesus Mombasa.jpg | Mutisya Maingi | CC BY-SA 4.0 |
+| `lake-naivasha.jpg` | Lake Naivasha Kenya 0111.jpg | Letherian3 | CC BY-SA 4.0 |
+| `giraffe-nairobi-skyline.jpg` | A giraffe with a beautiful background of Nairobi City Skyline.jpg | Alexmbogo | CC BY-SA 4.0 |
+| `lions-masai-mara.jpg` | Lions Family Portrait Masai Mara.jpg | Benh LIEU SONG | CC BY-SA 3.0 |
+| `amboseli-kilimanjaro.jpg` | Amboseli National Park and Mt. Kilimanjaro.jpg | Ninaras | CC BY 4.0 |
+| `rhinos-lake-nakuru.jpg` | Rhinos and bushes, Lake Nakuru National Park, Kenya.jpg | Daniel Case | CC BY-SA 4.0 |
