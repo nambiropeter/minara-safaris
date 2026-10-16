@@ -498,6 +498,79 @@ export interface Order {
     checkoutSessionId?: string | null;
     paymentIntentId?: string | null;
   };
+  /**
+   * The hotel booking behind this order. Written by the server only; the price facts freeze once paid.
+   */
+  supplier?: {
+    /**
+     * hotelbeds
+     */
+    name?: string | null;
+    status?: ('pending' | 'booking' | 'booked' | 'failed' | 'unknown' | 'cancelled') | null;
+    /**
+     * Hotelbeds booking reference
+     */
+    reference?: string | null;
+    /**
+     * Our reference, as sent to Hotelbeds: search for this there if the status is unknown
+     */
+    clientReference?: string | null;
+    hotelCode?: number | null;
+    hotelName?: string | null;
+    roomName?: string | null;
+    boardName?: string | null;
+    checkIn?: string | null;
+    checkOut?: string | null;
+    guests?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * Opaque Hotelbeds key, kept exactly as received
+     */
+    rateKey?: string | null;
+    /**
+     * EUR, major units: what Hotelbeds quoted before payment
+     */
+    netAmount?: number | null;
+    /**
+     * EUR, major units: what Hotelbeds actually booked at
+     */
+    bookedNetAmount?: number | null;
+    /**
+     * Basis points: 1500 is 15%
+     */
+    marginBps?: number | null;
+    fxEurPerKes?: number | null;
+    fxUsdPerKes?: number | null;
+    /**
+     * A fee applies from each date. Amounts are what the customer is charged, in minor units of the order currency.
+     */
+    cancellationPolicies?:
+      | {
+          from: string;
+          amount: number;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Check-in hours, deposits, minimum age. Shown to the guest.
+     */
+    rateComments?: string | null;
+    /**
+     * The legal entity the guest is told they pay through
+     */
+    payableTo?: string | null;
+    /**
+     * Why a booking failed, or what to check
+     */
+    note?: string | null;
+  };
   accessTokenHash?: string | null;
   invoice?: (number | null) | Media;
   staffNotes?: string | null;
@@ -874,6 +947,37 @@ export interface OrdersSelect<T extends boolean = true> {
     | {
         checkoutSessionId?: T;
         paymentIntentId?: T;
+      };
+  supplier?:
+    | T
+    | {
+        name?: T;
+        status?: T;
+        reference?: T;
+        clientReference?: T;
+        hotelCode?: T;
+        hotelName?: T;
+        roomName?: T;
+        boardName?: T;
+        checkIn?: T;
+        checkOut?: T;
+        guests?: T;
+        rateKey?: T;
+        netAmount?: T;
+        bookedNetAmount?: T;
+        marginBps?: T;
+        fxEurPerKes?: T;
+        fxUsdPerKes?: T;
+        cancellationPolicies?:
+          | T
+          | {
+              from?: T;
+              amount?: T;
+              id?: T;
+            };
+        rateComments?: T;
+        payableTo?: T;
+        note?: T;
       };
   accessTokenHash?: T;
   invoice?: T;

@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   db: { findByID: vi.fn(), update: vi.fn() },
   refundsCreate: vi.fn(),
+  cancelBooking: vi.fn(),
+  hb: { config: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
 }));
+
+vi.mock("@/lib/hotelbeds", () => ({ getHotelbeds: () => h.hb.config, cancelBooking: h.cancelBooking }));
 
 vi.mock("@/lib/stripe", () => ({
   getStripe: vi.fn(() => ({ refunds: { create: h.refundsCreate } })),
@@ -117,5 +121,109 @@ describe("refundOrder", () => {
     expect(res.status).toBe(502);
     expect((await res.json()).error).toBe("Stripe is down");
     expect(h.db.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("refundOrder: hotel orders", () => {
+  const FUTURE = new Date(Date.now() + 30 * 86_400_000).toISOString();
+  const PAST = "2020-01-01T00:00:00Z";
+  const hotel = (supplier: Record<string, unknown> = {}) => ({
+    ...order,
+    supplier: {
+      name: "hotelbeds",
+      status: "booked",
+      reference: "286-264500",
+      cancellationPolicies: [{ from: FUTURE, amount: 5800000 }],
+      ...supplier,
+    },
+  });
+
+  beforeEach(() => {
+    h.hb.config = { apiKey: "k", secret: "s", baseUrl: "https://x" };
+    h.cancelBooking.mockResolvedValue({ outcome: "cancelled", feeNet: 0 });
+  });
+
+  it("cancels with Hotelbeds first, records it, and only then refunds in full", async () => {
+    h.db.findByID.mockResolvedValue(hotel());
+    const order_of_calls: string[] = [];
+    h.cancelBooking.mockImplementation(async () => (order_of_calls.push("cancel"), { outcome: "cancelled", feeNet: 0 }));
+    h.refundsCreate.mockImplementation(async () => (order_of_calls.push("refund"), { id: "re_1" }));
+
+    const res = await refundOrder(req());
+
+    expect(res.status).toBe(200);
+    expect(order_of_calls).toEqual(["cancel", "refund"]);
+    expect(h.cancelBooking).toHaveBeenCalledWith(expect.anything(), "286-264500");
+    expect(h.db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { supplier: { status: "cancelled", note: expect.stringContaining("agent@minara.example") } } }),
+    );
+  });
+
+  it("refuses when the booking has cancellation fees, touching neither Hotelbeds nor Stripe", async () => {
+    h.db.findByID.mockResolvedValue(hotel({ cancellationPolicies: [{ from: PAST, amount: 5800000 }] }));
+
+    const res = await refundOrder(req());
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("cancellation fees");
+    expect(h.cancelBooking).not.toHaveBeenCalled();
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("refunds nothing if the booking can't be cancelled", async () => {
+    h.db.findByID.mockResolvedValue(hotel());
+    h.cancelBooking.mockResolvedValue({ outcome: "failed", reason: "still CONFIRMED" });
+
+    const res = await refundOrder(req());
+
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toContain("nothing was refunded");
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("refunds nothing if it can't tell whether the booking was cancelled", async () => {
+    h.db.findByID.mockResolvedValue(hotel());
+    h.cancelBooking.mockResolvedValue({ outcome: "unknown", reason: "no answer" });
+    expect((await refundOrder(req())).status).toBe(502);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not cancel twice when retrying a refund that failed after the cancellation", async () => {
+    h.db.findByID.mockResolvedValue(hotel({ status: "cancelled" }));
+
+    const res = await refundOrder(req());
+
+    expect(res.status).toBe(200);
+    expect(h.cancelBooking).not.toHaveBeenCalled();
+    expect(h.refundsCreate).toHaveBeenCalled();
+  });
+
+  it("lets staff refund an order Hotelbeds refused, when the automatic refund didn't go through", async () => {
+    h.db.findByID.mockResolvedValue(hotel({ status: "failed", reference: undefined }));
+    expect((await refundOrder(req())).status).toBe(200);
+    expect(h.cancelBooking).not.toHaveBeenCalled();
+  });
+
+  it("won't refund while the booking's state is unknown or in flight: someone checks Hotelbeds first", async () => {
+    for (const status of ["unknown", "booking", "pending"]) {
+      h.db.findByID.mockResolvedValue(hotel({ status }));
+      const res = await refundOrder(req());
+      expect(res.status).toBe(409);
+      expect((await res.json()).error).toContain("MS-2026-TEST");
+    }
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("can't cancel without Hotelbeds configured, and says so", async () => {
+    h.db.findByID.mockResolvedValue(hotel());
+    h.hb.config = null;
+    expect((await refundOrder(req())).status).toBe(503);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("leaves package orders exactly as they were", async () => {
+    h.db.findByID.mockResolvedValue(order);
+    expect((await refundOrder(req())).status).toBe(200);
+    expect(h.cancelBooking).not.toHaveBeenCalled();
   });
 });

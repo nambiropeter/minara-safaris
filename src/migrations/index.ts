@@ -4,6 +4,7 @@ import * as migration_20260906_190200_query_presets from './20260906_190200_quer
 import * as migration_20261016_093425_packages_accommodation from './20261016_093425_packages_accommodation';
 import * as migration_20261016_095411_destinations_hotel_destination from './20261016_095411_destinations_hotel_destination';
 import * as migration_20261016_162741_hotel_settings from './20261016_162741_hotel_settings';
+import * as migration_20261016_163434_hotel_supplier from './20261016_163434_hotel_supplier';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261016_162741_hotel_settings.up,
     down: migration_20261016_162741_hotel_settings.down,
-    name: '20261016_162741_hotel_settings'
+    name: '20261016_162741_hotel_settings',
+  },
+  {
+    up: migration_20261016_163434_hotel_supplier.up,
+    down: migration_20261016_163434_hotel_supplier.down,
+    name: '20261016_163434_hotel_supplier'
   },
 ];

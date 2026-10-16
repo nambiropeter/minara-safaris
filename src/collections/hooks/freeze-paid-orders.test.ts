@@ -61,3 +61,74 @@ describe("assertNotRepricingPaidOrder", () => {
     ).not.toThrow();
   });
 });
+
+describe("assertNotRepricingPaidOrder: hotel supplier figures", () => {
+  const supplier = {
+    netAmount: 338.28,
+    marginBps: 1500,
+    fxEurPerKes: 0.0066,
+    fxUsdPerKes: 0.0077,
+    cancellationPolicies: [{ from: "2027-01-13T12:00:00+03:00", amount: 5_000_000 }],
+  };
+  const paid = { status: "paid", amountTotal: 5_000_000, currency: "KES", items: [], supplier };
+
+  it("refuses to change what the hotel price was built from once paid", () => {
+    for (const change of [
+      { netAmount: 1 },
+      { marginBps: 0 },
+      { fxEurPerKes: 0.01 },
+      { fxUsdPerKes: 0.01 },
+      { cancellationPolicies: [{ from: "2027-01-13T12:00:00+03:00", amount: 1 }] },
+    ]) {
+      expect(() =>
+        assertNotRepricingPaidOrder({ previous: paid, incoming: { supplier: { ...supplier, ...change } } }),
+      ).toThrow(/already been paid/);
+    }
+  });
+
+  it("lets the server record the booking outcome after payment", () => {
+    expect(() =>
+      assertNotRepricingPaidOrder({
+        previous: paid,
+        incoming: { supplier: { ...supplier, status: "booked", reference: "286-264500", note: "ok" } as never },
+      }),
+    ).not.toThrow();
+  });
+
+  it("lets the webhook record the outcome even when Payload passes only the changed group", () => {
+    expect(() =>
+      assertNotRepricingPaidOrder({ previous: paid, incoming: { supplier: { status: "booked", reference: "286-264500" } as never } }),
+    ).not.toThrow();
+  });
+
+  it("still catches a money change that arrives alone in a partial group", () => {
+    expect(() => assertNotRepricingPaidOrder({ previous: paid, incoming: { supplier: { marginBps: 0 } } })).toThrow(/already been paid/);
+  });
+
+  it("is not fooled by per-row ids or nulls Payload adds when it merges the document", () => {
+    expect(() =>
+      assertNotRepricingPaidOrder({
+        previous: { ...paid, supplier: { ...supplier, cancellationPolicies: [{ id: "a", from: "2027-01-13T12:00:00+03:00", amount: 5_000_000 } as never] } },
+        incoming: { supplier: { ...supplier, bookedNetAmount: null } as never },
+      }),
+    ).not.toThrow();
+  });
+
+  it("leaves a package order alone when its empty supplier group is merged back as nulls", () => {
+    expect(() =>
+      assertNotRepricingPaidOrder({
+        previous: { status: "paid", amountTotal: 1, currency: "KES", items: [], supplier: null },
+        incoming: { supplier: { netAmount: null, cancellationPolicies: [] } },
+      }),
+    ).not.toThrow();
+  });
+
+  it("lets the figures be set while the order is still pending", () => {
+    expect(() =>
+      assertNotRepricingPaidOrder({
+        previous: { status: "pending", amountTotal: 1, currency: "KES", items: [], supplier: null },
+        incoming: { supplier },
+      }),
+    ).not.toThrow();
+  });
+});

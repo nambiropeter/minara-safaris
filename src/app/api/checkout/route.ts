@@ -3,10 +3,10 @@ import { getPayload } from "payload";
 import { z } from "zod";
 
 import configPromise from "@payload-config";
-import { generateBookingToken } from "@/lib/booking-token";
 import { convertPrice, getKesRates, isDisplayCurrency } from "@/lib/exchange-rates";
 import { priceOrder, type PriceablePackage } from "@/lib/pricing";
 import { allowRequest } from "@/lib/rate-limit";
+import { startCheckout } from "@/lib/start-checkout";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -102,14 +102,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { token, hash } = generateBookingToken();
-  const orderNumber = `MS-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
-
-  const order = await payload.create({
-    collection: "orders",
-    data: {
-      orderNumber,
-      status: "pending",
+  const started = await startCheckout({
+    payload,
+    stripe,
+    origin: process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin,
+    cancelPath: "/packages",
+    order: {
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       customerPhone: data.customerPhone,
@@ -119,53 +117,23 @@ export async function POST(request: Request) {
       travelDate: data.travelDate,
       adults: data.adults,
       children: data.children,
-      accessTokenHash: hash,
       staffNotes:
         converted && rates
           ? `Charged in ${target} at 1 KES = ${rates.usdPerKes} USD (exchangerate-api, ${rates.updatedAt}).`
           : undefined,
     },
+    lineItems: priced.items.map((item) => ({
+      quantity: item.quantity,
+      price_data: {
+        currency: priced.currency.toLowerCase(),
+        unit_amount: item.unitAmount,
+        product_data: { name: item.title },
+      },
+    })),
   });
-
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-
-  let session;
-  try {
-    session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: data.customerEmail,
-      client_reference_id: String(order.id),
-      metadata: { orderId: String(order.id), bookingToken: token },
-      line_items: priced.items.map((item) => ({
-        quantity: item.quantity,
-        price_data: {
-          currency: priced.currency.toLowerCase(),
-          unit_amount: item.unitAmount,
-          product_data: { name: item.title },
-        },
-      })),
-      success_url: `${origin}/booking/${token}?paid=1`,
-      cancel_url: `${origin}/packages`,
-    });
-  } catch (error) {
-    console.error("stripe checkout session failed", error, { orderId: order.id });
-    // Kept as an audit trail, but never left as a live "pending" order.
-    await payload.update({
-      collection: "orders",
-      id: order.id,
-      data: { status: "failed", staffNotes: "Stripe session could not be created." },
-    });
-    return NextResponse.json(
-      { error: "Payment could not be started. Please try again." },
-      { status: 502 },
-    );
+  if (!started.ok) {
+    return NextResponse.json({ error: "Payment could not be started. Please try again." }, { status: 502 });
   }
 
-  await payload.update({
-    collection: "orders",
-    id: order.id,
-    data: { stripe: { checkoutSessionId: session.id } },
-  });
-
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url: started.url });
 }

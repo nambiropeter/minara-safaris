@@ -22,15 +22,21 @@ export async function notifyOrderPaid(
 
   const resend = new Resend(apiKey);
   const total = formatMoney(order.amountTotal, order.currency as Currency);
+  // A hotel booked straight away is confirmed by the supplier, not "being confirmed".
+  const confirmed = order.status === "confirmed";
+  const hotelReference = order.supplier?.reference;
 
   await resend.emails.send({
     from,
     to: order.customerEmail,
-    subject: `Payment received - ${order.orderNumber}`,
+    subject: confirmed ? `Booking confirmed - ${order.orderNumber}` : `Payment received - ${order.orderNumber}`,
     text: [
-      `Thank you, we have received your payment. We are now confirming availability with our partners for your dates, and will be in touch to confirm your booking.`,
+      confirmed
+        ? `Thank you. Your booking is confirmed.`
+        : `Thank you, we have received your payment. We are now confirming availability with our partners for your dates, and will be in touch to confirm your booking.`,
       ``,
       `Booking reference: ${order.orderNumber}`,
+      ...(hotelReference ? [`Hotel confirmation number: ${hotelReference}`] : []),
       `Total paid: ${total}`,
       ``,
       `View your booking and payment receipt:`,
@@ -42,6 +48,32 @@ export async function notifyOrderPaid(
     attachments: invoicePdf
       ? [{ filename: `Invoice-${order.orderNumber}.pdf`, content: invoicePdf }]
       : undefined,
+  });
+}
+
+/**
+ * Tells a customer who has already paid that the hotel could not be booked and the money
+ * is on its way back. Without it they would hear nothing between a charge and a refund.
+ */
+export async function notifyHotelRefused(order: Order): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) return;
+
+  const total = formatMoney(order.amountTotal, order.currency as Currency);
+  await new Resend(apiKey).emails.send({
+    from,
+    to: order.customerEmail,
+    subject: `We could not confirm your hotel - ${order.orderNumber}`,
+    text: [
+      `We are sorry: the hotel could not confirm your booking, so nothing has been booked.`,
+      ``,
+      `We have refunded your payment of ${total} in full. It can take 5 to 10 working days to appear on your statement.`,
+      ``,
+      `Booking reference: ${order.orderNumber}`,
+      ``,
+      `If you would still like to stay, reply to this email and we will help you find another room.`,
+    ].join("\n"),
   });
 }
 

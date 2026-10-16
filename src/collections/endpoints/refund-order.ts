@@ -1,6 +1,8 @@
 import type { PayloadHandler } from "payload";
 
+import { cancelBooking, getHotelbeds } from "../../lib/hotelbeds.ts";
 import { formatMoney, type Currency } from "../../lib/money.ts";
+import { refundPayment } from "../../lib/refund.ts";
 import { getStripe } from "../../lib/stripe.ts";
 
 /**
@@ -47,21 +49,59 @@ export const refundOrder: PayloadHandler = async (req) => {
   const stripe = getStripe();
   if (!stripe) return json({ error: "Stripe is not configured." }, 503);
 
-  try {
-    await stripe.refunds.create(
-      {
-        payment_intent: paymentIntent,
-        metadata: { orderId: String(order.id), requestedBy: req.user.email },
-      },
-      { idempotencyKey: `refund-order-${order.id}` },
-    );
-  } catch (error) {
-    const failure = error as { code?: string; message?: string };
-    if (failure.code === "charge_already_refunded") {
-      return json({ error: "Stripe says this payment is already refunded." }, 409);
+  // A hotel is a live booking with Hotelbeds. Refunding the customer while it stands would
+  // leave Minara owing the hotel, so the booking goes first.
+  const supplier = order.supplier;
+  if (supplier?.name === "hotelbeds") {
+    const status = supplier.status;
+    if (status === "booked") {
+      // Fees depend on timing, and splitting a refund by them is a decision for a person.
+      // Inside the free window the customer's refund is simply the whole payment.
+      const first = supplier.cancellationPolicies?.[0];
+      const free = Boolean(first && Date.parse(first.from) > Date.now());
+      if (!free) {
+        return json(
+          { error: "This hotel booking has cancellation fees. Cancel it with Hotelbeds and refund the right amount by hand in Stripe." },
+          409,
+        );
+      }
+      const config = getHotelbeds();
+      if (!config || !supplier.reference) return json({ error: "Hotelbeds is not configured, so the hotel booking can't be cancelled." }, 503);
+
+      const cancelled = await cancelBooking(config, supplier.reference);
+      if (cancelled.outcome !== "cancelled") {
+        return json({ error: `The hotel booking could not be cancelled, so nothing was refunded. ${cancelled.reason}` }, 502);
+      }
+      // Recorded before the refund, so a refund that then fails can be retried without cancelling twice.
+      await req.payload.update({
+        collection: "orders",
+        id: order.id,
+        data: {
+          supplier: {
+            status: "cancelled",
+            note: `Cancelled with Hotelbeds by ${req.user.email}${cancelled.feeNet > 0 ? `; Hotelbeds charged EUR ${cancelled.feeNet}` : ""}.`,
+          },
+        },
+      });
+    } else if (status !== "cancelled" && status !== "failed") {
+      // 'failed' and 'cancelled' have nothing live to cancel (a retry after a refund hiccup lands here).
+      return json(
+        { error: `The hotel booking status is "${status ?? "unknown"}". Check Hotelbeds for ${order.orderNumber} before refunding.` },
+        409,
+      );
     }
-    console.error("refund failed", error, { orderId: order.id });
-    return json({ error: failure.message ?? "Stripe could not issue the refund." }, 502);
+  }
+
+  const refund = await refundPayment(stripe, {
+    paymentIntentId: paymentIntent,
+    orderId: order.id,
+    idempotencyKey: `refund-order-${order.id}`,
+    requestedBy: req.user.email,
+  });
+  if (!refund.ok) {
+    return refund.reason === "already_refunded"
+      ? json({ error: "Stripe says this payment is already refunded." }, 409)
+      : json({ error: refund.message }, 502);
   }
 
   // Audit trail: who asked. The money has moved by now, so a failure to write

@@ -34,7 +34,7 @@ export class HotelbedsError extends Error {
   }
 }
 
-async function call<T>(config: HotelbedsConfig, method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+async function call<T>(config: HotelbedsConfig, method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {
   const signature = signRequest(config.apiKey, config.secret, Math.floor(Date.now() / 1000));
   const response = await fetch(`${config.baseUrl}${path}`, {
     method,
@@ -209,7 +209,24 @@ export async function getHotelRates(
   return { code: hotel.code, name: hotel.name, currency: hotel.currency, rooms };
 }
 
-export type CheckedRate = { currency: string; rate: HotelRate };
+export type CheckedRate = {
+  currency: string;
+  /** The stay the rateKey is actually for. The rateKey encodes it, so this is the truth, not the request. */
+  checkIn: string;
+  checkOut: string;
+  hotelCode: number;
+  hotelName: string;
+  roomName: string;
+  adults: number;
+  children: number;
+  /** Check-in hours, deposits, minimum age: what the guest must be told before paying. */
+  comments: string;
+  /** True means the hotel wants card data from us. We never send any, so such a rate is not sellable. */
+  paymentDataRequired: boolean;
+  rate: HotelRate;
+};
+
+type RawCheckedRate = RawRate & { rateComments?: string; adults?: number; children?: number };
 
 /**
  * Re-prices one rate with Hotelbeds right before we ask the customer to pay.
@@ -218,12 +235,203 @@ export type CheckedRate = { currency: string; rate: HotelRate };
  */
 export async function checkRate(config: HotelbedsConfig, rateKey: string): Promise<CheckedRate> {
   const raw = await post<{
-    hotel?: { currency: string; rooms?: { rates?: RawRate[] }[] };
+    hotel?: {
+      code: number;
+      name: string;
+      currency: string;
+      checkIn: string;
+      checkOut: string;
+      paymentDataRequired?: boolean;
+      rooms?: { name: string; rates?: RawCheckedRate[] }[];
+    };
   }>(config, "/hotel-api/1.0/checkrates", { rooms: [{ rateKey }] });
 
-  const rate = raw.hotel?.rooms?.[0]?.rates?.[0];
-  if (!raw.hotel || !rate || (raw.hotel.rooms?.length ?? 0) !== 1 || (raw.hotel.rooms?.[0]?.rates?.length ?? 0) !== 1) {
+  const hotel = raw.hotel;
+  const room = hotel?.rooms?.[0];
+  const rate = room?.rates?.[0];
+  if (!hotel || !room || !rate || hotel.rooms?.length !== 1 || room.rates?.length !== 1) {
     throw new HotelbedsError(502, "Unexpected checkrates response shape");
   }
-  return { currency: raw.hotel.currency, rate: parseRate(rate) };
+  return {
+    currency: hotel.currency,
+    checkIn: hotel.checkIn,
+    checkOut: hotel.checkOut,
+    hotelCode: hotel.code,
+    hotelName: hotel.name,
+    roomName: room.name,
+    adults: rate.adults ?? 0,
+    children: rate.children ?? 0,
+    comments: (rate.rateComments ?? "").trim(),
+    paymentDataRequired: hotel.paymentDataRequired === true,
+    rate: parseRate(rate),
+  };
+}
+
+export type HotelBooking = {
+  reference: string;
+  clientReference: string;
+  /** CONFIRMED, CANCELLED, ... */
+  status: string;
+  /** Net owed to Hotelbeds. After a cancellation this is the fee still payable (0 inside the free window). */
+  totalNet: number;
+  currency: string;
+  /** The legal entity the guest's voucher must name ("payable through"). */
+  supplierName: string;
+  supplierVat: string;
+};
+
+type RawBooking = {
+  reference: string;
+  clientReference?: string;
+  status: string;
+  totalNet?: string | number;
+  currency?: string;
+  hotel?: { supplier?: { name?: string; vatNumber?: string } };
+};
+
+const parseBooking = (raw: RawBooking): HotelBooking => ({
+  reference: raw.reference,
+  clientReference: raw.clientReference ?? "",
+  status: raw.status,
+  totalNet: Number(raw.totalNet ?? 0),
+  currency: raw.currency ?? "",
+  supplierName: raw.hotel?.supplier?.name ?? "",
+  supplierVat: raw.hotel?.supplier?.vatNumber ?? "",
+});
+
+/** References are digits and a dash. Anything else never goes into a URL. */
+const safeReference = (reference: string) => {
+  if (!/^[A-Za-z0-9-]{3,40}$/.test(reference)) throw new Error("Invalid Hotelbeds booking reference");
+  return reference;
+};
+
+export async function getBooking(config: HotelbedsConfig, reference: string): Promise<HotelBooking> {
+  const raw = await get<{ booking: RawBooking }>(
+    config,
+    `/hotel-api/1.0/bookings/${safeReference(reference)}?language=ENG`,
+  );
+  return parseBooking(raw.booking);
+}
+
+const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * Looks a booking up by our own reference. This is how an ambiguous result is settled:
+ * Hotelbeds can answer 500 (or time out) after it has already created the booking, so
+ * "the call failed" must never be read as "no booking exists". The creation window is
+ * a day either side so the Spanish/UTC date boundary can't hide it.
+ */
+export async function findBookingByClientReference(
+  config: HotelbedsConfig,
+  clientReference: string,
+): Promise<HotelBooking | null> {
+  const query = new URLSearchParams({
+    start: isoDay(-1),
+    end: isoDay(1),
+    filterType: "CREATION",
+    clientReference,
+    from: "1",
+    to: "10",
+    language: "ENG",
+  });
+  const raw = await get<{ bookings?: { bookings?: RawBooking[] } }>(config, `/hotel-api/1.0/bookings?${query}`);
+  const match = (raw.bookings?.bookings ?? []).find((b) => b.clientReference === clientReference);
+  return match ? parseBooking(match) : null;
+}
+
+export type BookGuest = { type: "AD" | "CH"; name: string; surname: string; age?: number };
+
+/**
+ * Three outcomes, never a throw, so the caller can't confuse "unknown" with "failed":
+ * - `booked`: Hotelbeds confirmed it.
+ * - `rejected`: it definitely was not booked (a 4xx refusal, or a failure after which a
+ *   lookup found nothing). Safe to refund.
+ * - `unknown`: we can't tell. Do NOT refund and do NOT retry; a human checks Hotelbeds.
+ */
+export type BookOutcome =
+  | { outcome: "booked"; booking: HotelBooking }
+  | { outcome: "rejected"; reason: string }
+  | { outcome: "unknown"; reason: string };
+
+export async function bookRoom(
+  config: HotelbedsConfig,
+  args: { clientReference: string; rateKey: string; holder: { name: string; surname: string }; guests: BookGuest[]; remark?: string },
+): Promise<BookOutcome> {
+  const body = {
+    holder: args.holder,
+    rooms: [
+      {
+        rateKey: args.rateKey,
+        paxes: args.guests.map((g) => ({
+          roomId: 1,
+          type: g.type,
+          name: g.name,
+          surname: g.surname,
+          ...(g.age !== undefined && { age: g.age }),
+        })),
+      },
+    ],
+    clientReference: args.clientReference,
+    ...(args.remark && { remark: args.remark }),
+    tolerance: 2,
+  };
+
+  try {
+    const raw = await post<{ booking: RawBooking }>(config, "/hotel-api/1.0/bookings", body);
+    const booking = parseBooking(raw.booking);
+    return booking.status === "CONFIRMED"
+      ? { outcome: "booked", booking }
+      : { outcome: "unknown", reason: `Hotelbeds answered with status ${booking.status}` };
+  } catch (error) {
+    // A 4xx is Hotelbeds saying no. Anything else (5xx, timeout, network) may have succeeded.
+    if (error instanceof HotelbedsError && error.status >= 400 && error.status < 500) {
+      return { outcome: "rejected", reason: error.message };
+    }
+    const reason = error instanceof Error ? error.message : String(error);
+    try {
+      const found = await findBookingByClientReference(config, args.clientReference);
+      if (!found) return { outcome: "rejected", reason: `${reason} (no booking exists under ${args.clientReference})` };
+      return found.status === "CONFIRMED"
+        ? { outcome: "booked", booking: found }
+        : { outcome: "unknown", reason: `${reason} (a booking exists with status ${found.status})` };
+    } catch (lookupError) {
+      const detail = lookupError instanceof Error ? lookupError.message : String(lookupError);
+      return { outcome: "unknown", reason: `${reason}; checking for the booking also failed: ${detail}` };
+    }
+  }
+}
+
+export type CancelOutcome =
+  | { outcome: "cancelled"; feeNet: number }
+  | { outcome: "failed"; reason: string }
+  | { outcome: "unknown"; reason: string };
+
+/**
+ * Cancels, and verifies. The sandbox answered a real cancellation with a 500 and had in
+ * fact cancelled, so a failed DELETE is settled by reading the booking back.
+ */
+export async function cancelBooking(config: HotelbedsConfig, reference: string): Promise<CancelOutcome> {
+  let failure = "";
+  try {
+    const raw = await call<{ booking: RawBooking }>(
+      config,
+      "DELETE",
+      `/hotel-api/1.0/bookings/${safeReference(reference)}?cancellationFlag=CANCELLATION&language=ENG`,
+    );
+    const booking = parseBooking(raw.booking);
+    if (booking.status === "CANCELLED") return { outcome: "cancelled", feeNet: booking.totalNet };
+    failure = `Hotelbeds answered with status ${booking.status}`;
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    const now = await getBooking(config, reference);
+    return now.status === "CANCELLED"
+      ? { outcome: "cancelled", feeNet: now.totalNet }
+      : { outcome: "failed", reason: `${failure} (booking is still ${now.status})` };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { outcome: "unknown", reason: `${failure}; reading the booking back also failed: ${detail}` };
+  }
 }
