@@ -234,6 +234,10 @@ export interface Package {
   priceResident?: number | null;
   currency?: ('KES' | 'USD') | null;
   /**
+   * If the guest chooses their own hotel, priceFrom must exclude lodging and priceNote must say so ("land only, hotels booked separately").
+   */
+  accommodation: 'included' | 'choose-your-own';
+  /**
    * e.g. "Easter Special" — drives the homepage deals strip
    */
   offerLabel?: string | null;
@@ -706,6 +710,7 @@ export interface PackagesSelect<T extends boolean = true> {
   priceNote?: T;
   priceResident?: T;
   currency?: T;
+  accommodation?: T;
   offerLabel?: T;
   summary?: T;
   description?: T;

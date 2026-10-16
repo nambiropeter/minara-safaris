@@ -33,6 +33,20 @@ export const Packages: CollectionConfig = {
         },
       ],
     },
+    {
+      name: 'accommodation',
+      type: 'select',
+      required: true,
+      defaultValue: 'included',
+      options: [
+        { label: 'Included in the price', value: 'included' },
+        { label: 'Guest chooses their own hotel', value: 'choose-your-own' },
+      ],
+      admin: {
+        description:
+          'If the guest chooses their own hotel, priceFrom must exclude lodging and priceNote must say so ("land only, hotels booked separately").',
+      },
+    },
     { name: 'offerLabel', type: 'text', admin: { description: 'e.g. "Easter Special" — drives the homepage deals strip' } },
     { name: 'summary', type: 'textarea', required: true, admin: { description: 'Short teaser for cards' } },
     { name: 'description', type: 'richText' },
