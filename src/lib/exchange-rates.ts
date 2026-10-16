@@ -18,6 +18,11 @@ export const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = ["KES", "USD"];
 export type KesRates = {
   /** How many US dollars one Kenyan shilling buys. */
   usdPerKes: number;
+  /**
+   * How many euros one Kenyan shilling buys. Hotelbeds quotes in EUR, so hotel
+   * prices convert from it. Optional: the catalogue never needs it.
+   */
+  eurPerKes?: number;
   /** Provider's last-update timestamp, for the staff audit note. */
   updatedAt: string;
 };
@@ -34,9 +39,12 @@ export function parseRates(json: unknown): KesRates | null {
   };
   if (body.result !== "success") return null;
   // The keyed endpoint calls it `conversion_rates`, the open one `rates`.
-  const usd = (body.conversion_rates ?? body.rates)?.USD;
+  const table = body.conversion_rates ?? body.rates;
+  const usd = table?.USD;
   if (typeof usd !== "number" || !Number.isFinite(usd) || usd <= 0) return null;
-  return { usdPerKes: usd, updatedAt: body.time_last_update_utc ?? "" };
+  const eur = table?.EUR;
+  const eurPerKes = typeof eur === "number" && Number.isFinite(eur) && eur > 0 ? eur : undefined;
+  return { usdPerKes: usd, eurPerKes, updatedAt: body.time_last_update_utc ?? "" };
 }
 
 /** Returns null when the provider is unreachable — callers fall back to the catalogue currency. */

@@ -17,6 +17,11 @@ describe("parseRates", () => {
     expect(parseRates({ result: "success", rates: { USD: 0.0077 } })?.usdPerKes).toBe(0.0077);
   });
 
+  it("also reads the euro rate when the provider has one", () => {
+    expect(parseRates({ result: "success", rates: { USD: 0.0077, EUR: 0.0066 } })?.eurPerKes).toBe(0.0066);
+    expect(parseRates({ result: "success", rates: { USD: 0.0077, EUR: 0 } })?.eurPerKes).toBeUndefined();
+  });
+
   it("rejects errors and nonsense", () => {
     expect(parseRates({ result: "error", "error-type": "invalid-key" })).toBeNull();
     expect(parseRates({ result: "success", rates: { USD: 0 } })).toBeNull();

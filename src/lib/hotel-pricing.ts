@@ -1,3 +1,5 @@
+import type { DisplayCurrency, KesRates } from "./exchange-rates";
+
 /**
  * Sell price from a supplier net price. Integer minor units throughout (all
  * Hotelbeds currencies we expect have 2 decimals) and rounded *up*, so margin is
@@ -11,6 +13,21 @@ export function applyMargin(netMajor: number, marginBps: number): number {
   if (!Number.isInteger(marginBps) || marginBps < 0) throw new Error("Invalid margin");
   const netMinor = Math.round(netMajor * 100);
   return Math.ceil((netMinor * (10_000 + marginBps)) / 10_000);
+}
+
+/**
+ * Hotelbeds quotes in EUR on our account (verified against the test host; USD is
+ * not offered), so the sell price converts to what the visitor pays in. Rounds
+ * **up** in the target currency, unlike catalogue `convertPrice`: this is a sell
+ * price with margin in it, and the figure shown is the figure charged either way.
+ * KES goes up to a whole shilling, USD to the cent. Returns target minor units.
+ */
+export function eurToDisplay(eurMinor: number, to: DisplayCurrency, rates: KesRates): number {
+  const { eurPerKes, usdPerKes } = rates;
+  if (!eurPerKes) throw new Error("No EUR rate available");
+  const eur = eurMinor / 100;
+  if (to === "KES") return Math.ceil(eur / eurPerKes - 1e-9) * 100;
+  return Math.ceil(eur * (usdPerKes / eurPerKes) * 100 - 1e-9);
 }
 
 export function marginBpsFromEnv(): number {

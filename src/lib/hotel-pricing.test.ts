@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { applyMargin, marginBpsFromEnv } from "./hotel-pricing";
+import { applyMargin, eurToDisplay, marginBpsFromEnv } from "./hotel-pricing";
 
 describe("applyMargin", () => {
   it("adds the margin in minor units", () => {
@@ -21,6 +21,28 @@ describe("applyMargin", () => {
     expect(() => applyMargin(Number.NaN, 1000)).toThrow();
     expect(() => applyMargin(10, 12.5)).toThrow();
     expect(() => applyMargin(10, -1)).toThrow();
+  });
+});
+
+describe("eurToDisplay", () => {
+  // 1 EUR = 150 KES = 1.16 USD
+  const rates = { usdPerKes: 0.0077333, eurPerKes: 1 / 150, updatedAt: "" };
+
+  it("converts euro cents to whole shillings, rounding up", () => {
+    expect(eurToDisplay(10_000, "KES", rates)).toBe(15_000_00); // EUR 100 = KES 15,000
+    expect(eurToDisplay(10_001, "KES", rates)).toBe(15_002_00); // 15001.5 -> 15002
+  });
+
+  it("converts euro cents to dollar cents, rounding up", () => {
+    expect(eurToDisplay(10_000, "USD", rates)).toBe(11_600);
+  });
+
+  it("does not gain a unit to float error", () => {
+    expect(eurToDisplay(100, "KES", { usdPerKes: 0.01, eurPerKes: 0.01, updatedAt: "" })).toBe(100_00);
+  });
+
+  it("refuses to guess without a EUR rate", () => {
+    expect(() => eurToDisplay(10_000, "KES", { usdPerKes: 0.0077, updatedAt: "" })).toThrow();
   });
 });
 
