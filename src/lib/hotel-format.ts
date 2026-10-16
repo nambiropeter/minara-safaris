@@ -28,3 +28,16 @@ export function cancellationLines(c: Cancellation, currency: Currency, price: nu
     ...c.policies.map((p) => `From ${formatHotelDate(p.from)}: ${formatHotelMoney(p.amount, currency)} fee`),
   ];
 }
+
+/**
+ * The terms stored on an order when the customer agreed to pay, as they stand now: free
+ * cancellation exists only while the first fee is still in the future. The clock is a
+ * parameter so this stays testable and a component never has to read it while rendering.
+ */
+export function storedCancellation(
+  policies: { from: string; amount: number }[],
+  now = Date.now(),
+): Cancellation {
+  const first = policies[0];
+  return { freeCancellationUntil: first && Date.parse(first.from) > now ? first.from : null, policies };
+}

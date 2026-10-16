@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cancellationLines, formatHotelMoney, nightsLabel } from "./hotel-format";
+import { cancellationLines, formatHotelMoney, nightsLabel, storedCancellation } from "./hotel-format";
 
 describe("formatHotelMoney", () => {
   it("drops .00 from whole amounts and keeps real cents", () => {
@@ -43,5 +43,19 @@ describe("cancellationLines", () => {
 
   it("is non-refundable when there are no policies to read", () => {
     expect(cancellationLines({ freeCancellationUntil: null, policies: [] }, "KES", price)).toEqual(["Non-refundable"]);
+  });
+});
+
+describe("storedCancellation", () => {
+  const now = Date.parse("2027-02-10T00:00:00Z");
+
+  it("is free while the first fee is still ahead", () => {
+    const c = storedCancellation([{ from: "2027-02-20T23:59:00+03:00", amount: 500 }], now);
+    expect(c.freeCancellationUntil).toBe("2027-02-20T23:59:00+03:00");
+  });
+
+  it("is not free once the first fee has started, or when there are no terms", () => {
+    expect(storedCancellation([{ from: "2027-02-01T00:00:00Z", amount: 500 }], now).freeCancellationUntil).toBeNull();
+    expect(storedCancellation([], now).freeCancellationUntil).toBeNull();
   });
 });

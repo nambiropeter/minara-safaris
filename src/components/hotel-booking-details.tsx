@@ -1,4 +1,4 @@
-import { cancellationLines, formatHotelDate, nightsLabel, type Cancellation } from "@/lib/hotel-format";
+import { cancellationLines, formatHotelDate, nightsLabel, storedCancellation } from "@/lib/hotel-format";
 import type { Currency } from "@/lib/money";
 import type { Order } from "@/payload-types";
 
@@ -24,11 +24,7 @@ export function HotelBookingDetails({ order }: { order: Order }) {
 
   const currency = order.currency as Currency;
   const policies = (supplier.cancellationPolicies ?? []).map((p) => ({ from: p.from, amount: p.amount }));
-  const first = policies[0];
-  const cancellation: Cancellation = {
-    freeCancellationUntil: first && Date.parse(first.from) > Date.now() ? first.from : null,
-    policies,
-  };
+  const cancellation = storedCancellation(policies);
 
   const nights =
     supplier.checkIn && supplier.checkOut
