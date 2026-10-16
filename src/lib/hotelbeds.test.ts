@@ -372,7 +372,15 @@ describe("searchAvailability", () => {
       Response.json({
         hotels: {
           hotels: [
-            { code: 7, name: "Hotel A", categoryName: "4 STARS", destinationName: "Nairobi", zoneName: "Westlands", currency: "EUR", minRate: "120.50" },
+            {
+              code: 7,
+              name: "Hotel A",
+              categoryName: "4 STARS",
+              destinationName: "Nairobi",
+              zoneName: "Westlands",
+              currency: "EUR",
+              rooms: [{ rates: [{ net: "120.50", paymentType: "AT_WEB" }, { net: "140.00", paymentType: "AT_WEB" }] }],
+            },
           ],
         },
       }),
@@ -401,6 +409,46 @@ describe("searchAvailability", () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).destination).toEqual({ code: "MBA", zone: 9 });
     await searchAvailability(config, params);
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).destination).toEqual({ code: "NBO" });
+  });
+
+  it("prices a hotel from the rates we can sell, not Hotelbeds' own minimum", async () => {
+    fetchMock.mockImplementation(async () =>
+      Response.json({
+        hotels: {
+          hotels: [
+            {
+              code: 1,
+              name: "Cheap only as a package",
+              currency: "EUR",
+              minRate: "80.00",
+              rooms: [
+                {
+                  rates: [
+                    { net: "80.00", paymentType: "AT_WEB", packaging: true },
+                    { net: "90.00", paymentType: "AT_HOTEL" },
+                    { net: "100.00", paymentType: "AT_WEB", rateClass: "NRF" },
+                    { net: "120.00", paymentType: "AT_WEB" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const [hotel] = await searchAvailability(config, params);
+
+    expect(hotel.netFrom).toBe(100); // the packaging 80 and the pay-at-hotel 90 are not for sale; non-refundable 100 is
+  });
+
+  it("does not list a hotel with nothing we can sell", async () => {
+    fetchMock.mockImplementation(async () =>
+      Response.json({
+        hotels: { hotels: [{ code: 2, name: "Packages only", currency: "EUR", rooms: [{ rates: [{ net: "50.00", paymentType: "AT_WEB", packaging: true }] }] }] },
+      }),
+    );
+    expect(await searchAvailability(config, params)).toEqual([]);
   });
 
   it("omits paxes when there are no children", async () => {

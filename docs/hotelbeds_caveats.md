@@ -13,13 +13,18 @@ Status: **open** = not done, **verify** = built but not proven, **decision** = a
 
 ## 1. What stops the integration running right now
 
-**Nothing, as of 2026-10-16.** The dev database has the full schema (20 `supplier_*` columns, the
-fee-schedule table, `hotel_settings`), the Hotelbeds test key, Stripe test keys and the margin fallback
-are set, and the hotel pages and package pages answer. What remains is the first real run (#6).
+**Nothing structural, as of 2026-10-16.** The dev database has the full schema, the Hotelbeds test key,
+Stripe test keys and the margin fallback are set, and the first real end-to-end booking has run
+(see "Closed"). One practical limit:
 
-To run it end to end: dev server on :3000, `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+- **The sandbox key returned `403 Quota exceeded`** (2026-10-16) after a burst of about ten calls in a few
+  seconds. Not yet known whether that is a per-second throttle or a daily cap. It stops *live testing*
+  temporarily, not the integration. Pace test calls, and find out which it is before the next long test.
+  In production a throttled booking after payment is classed as a refusal and refunded (safe, but
+  unfriendly); a short retry on 403/429 would be kinder.
+
+To run an end-to-end test: dev server on :3000, `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
 (its `whsec_` must match `STRIPE_WEBHOOK_SECRET`), then pay with a Stripe test card (typed by a person).
-Recipe: the Stripe e2e notes, and `docs/PRE-PROD.md` for the run log.
 
 ## 2. Built, not yet proven (all testable now, in the sandbox)
 
@@ -71,9 +76,21 @@ The checklist form is in `docs/PRE-PROD.md` under **Hotelbeds**.
 | 24 | **`images.dangerouslyAllowLocalIP` is on in development.** NAT64 dev networks resolve `photos.hotelbeds.com` to `64:ff9b::` addresses that Next's SSRF guard blocks. Production keeps the guard | dev-only | Remove if the dev network changes |
 | 25 | **Gallery uses Hotelbeds' photo order**, which can include odd shots (a knife block on one hotel) | open | Prefer exterior/room image types, or cap the count |
 
-### Why #12 isn't started
+### #12: the design, as decided (2026-10-16)
 
-Building it before the standalone booking has run once for real would put a second money path on top of an unproven one. It also needs decisions only you can make: if the package is paid and the hotel is refused, is the whole order refunded or only the hotel part (the admin refund is full-only today, and fee cases are manual); can a package be paid with its hotel still unbooked; one Stripe payment or two. Start it after the first live run, with those answered.
+Not started until the standalone booking was proven live (it now is). The decisions, from Leo:
+
+- **One checkout and one payment for a package and a hotel**, but kept separate *on paper*: the order carries
+  two items, and each can still be bought alone (hotel only, package only, or ask an agent).
+- **If the hotel is refused, the package stays.** Only the hotel's part is refunded (a **partial** Stripe
+  refund), the package remains paid for staff to confirm.
+- Standalone paths stay, because some rates are non-refundable and some customers will want a hotel alone
+  or to deal with an agent.
+
+What that means to build: a partial-refund path (today's refund helper and admin button are full-only); the
+webhook must set `confirmed` automatically **only for hotel-only orders** (in a bundle the package still needs
+staff confirmation, so the order stays `paid` and `supplier.status` carries the hotel); the admin refund needs
+to know which item it is refunding; `/hotels?package=<id>` as the entry from a package page.
 
 ## Decisions already made
 
@@ -84,6 +101,9 @@ Building it before the standalone booking has run once for real would put a seco
 - Hotelbeds quotes EUR only on this account; we convert to KES/USD, rounding **up** so margin survives the exchange.
 
 ## Closed
+
+- **First real end-to-end booking** (2026-10-16, dev server, Stripe sandbox, Hotelbeds test host). The Boma Nairobi, Superior room, room only, 10 to 13 Feb 2027, KES 48,862. Webhook answered 200 on every event; the order went `pending` to `confirmed` by itself with Hotelbeds reference `286-2159018`, our order number as `clientReference`, booked net equal to quoted net (EUR 292.14), the fee schedule stored, and the supplier "payable through" entity recorded (`HOTELBEDS DMCC`, it differs per booking). **Not yet covered:** the admin refund cancelling the booking first, a forced refusal, an unknown outcome, the booking page's hotel block, emails.
+- **"From" price on the results list was wrong for 30% of hotels** (found 2026-10-16 by measuring the sandbox): it used Hotelbeds' hotel-level minimum, which includes packaging rates we don't sell, so 12 of 40 hotels advertised a price 6-17% below anything we could offer. Now computed from sellable rates only, and a hotel with nothing sellable isn't listed. Unit-tested; **live re-check pending the sandbox quota** (#1 above).
 
 - **#20: `pnpm seed:hotels` run** (2026-10-16). Created 7 photos, 4 destinations, 6 packages and mapped the 4 existing destinations. Verified against the database afterwards: orders, leads, articles and users unchanged. The uploaded files are committed under `media/` (`a36330b`).
 - **#29: dev DB schema complete** (2026-10-16). After a partial dev push (two empty orphan tables left by the removed Postgres cache, and a rename prompt), the dev server was restarted and answered "create". Verified read-only: all 20 `supplier_*` columns, the fee-schedule table and `hotel_settings` exist, the orphans are gone, and orders (11) and packages (12) are unchanged.

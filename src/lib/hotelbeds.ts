@@ -85,8 +85,17 @@ type RawHotel = {
   destinationName?: string;
   zoneName?: string;
   currency: string;
-  minRate: string;
+  rooms?: { rates: { net: string; packaging?: boolean; paymentType: string }[] }[];
 };
+
+/**
+ * What we are able to sell. Packaging rates are for sale only inside a package, and the
+ * request-level `filter.packaging` is accepted but ignored (verified on the test host), so
+ * we filter here. Only `AT_WEB` rates: we collect payment through Stripe, so a pay-at-hotel
+ * rate would skip our checkout entirely. Non-refundable rates ARE sold, and shown as such.
+ * ponytail: conservative reading of the packaging flag; confirm at certification.
+ */
+const isSellable = (rate: { packaging?: boolean; paymentType: string }) => !rate.packaging && rate.paymentType === "AT_WEB";
 
 /**
  * Availability search. Callers must only reach this on an explicit user submit
@@ -111,15 +120,24 @@ export async function searchAvailability(
     destination: { code: params.destination, ...(params.zone !== undefined && { zone: params.zone }) },
   });
 
-  return (raw.hotels?.hotels ?? []).map((hotel) => ({
-    code: hotel.code,
-    name: hotel.name,
-    category: hotel.categoryName ?? "",
-    destination: hotel.destinationName ?? "",
-    zone: hotel.zoneName ?? "",
-    currency: hotel.currency,
-    netFrom: Number(hotel.minRate),
-  }));
+  // The "From" price comes from the rates we can sell, never from Hotelbeds' own `minRate`:
+  // that includes packaging rates, so it advertised a price we then couldn't offer (30% of
+  // hotels in the sandbox, 6-17% too low). A hotel with nothing sellable isn't listed.
+  return (raw.hotels?.hotels ?? []).flatMap((hotel) => {
+    const nets = (hotel.rooms ?? []).flatMap((room) => room.rates.filter(isSellable).map((rate) => Number(rate.net)));
+    if (nets.length === 0) return [];
+    return [
+      {
+        code: hotel.code,
+        name: hotel.name,
+        category: hotel.categoryName ?? "",
+        destination: hotel.destinationName ?? "",
+        zone: hotel.zoneName ?? "",
+        currency: hotel.currency,
+        netFrom: Math.min(...nets),
+      },
+    ];
+  });
 }
 
 export type CancellationPolicy = { amount: number; from: string };
@@ -165,15 +183,7 @@ function parseRate(raw: RawRate): HotelRate {
 
 export type HotelRates = { code: number; name: string; currency: string; rooms: HotelRoom[] };
 
-/**
- * Rooms and rates for one hotel, limited to what we can actually sell.
- * - Packaging rates are dropped: Hotelbeds marks them as sellable only inside a
- *   package, and the request-level `filter.packaging` is accepted but ignored
- *   (verified on the test host), so we filter here.
- *   ponytail: conservative reading of the packaging flag; confirm at certification.
- * - Only `AT_WEB` rates: we collect payment through Stripe, so a pay-at-hotel
- *   rate would skip our checkout entirely.
- */
+/** Rooms and rates for one hotel, limited to what we can sell (see `isSellable`). */
 export async function getHotelRates(
   config: HotelbedsConfig,
   hotelCode: number,
@@ -203,7 +213,7 @@ export async function getHotelRates(
     .map((room) => ({
       code: room.code,
       name: room.name,
-      rates: room.rates.filter((rate) => !rate.packaging && rate.paymentType === "AT_WEB").map(parseRate),
+      rates: room.rates.filter(isSellable).map(parseRate),
     }))
     .filter((room) => room.rates.length > 0);
   return { code: hotel.code, name: hotel.name, currency: hotel.currency, rooms };
