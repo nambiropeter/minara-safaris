@@ -17,8 +17,17 @@ being the only component that renders money.
 
 ## Color
 
-Warm savanna, four roles. Both themes are designed and contrast-verified — dark
-is a warm near-black built for photography, not an inversion.
+Four looks from two switches — light/dark (next-themes) × Sunset/Waves
+(`data-palette`). Every pairing is designed and contrast-verified (AA, worst case
+against the brightest/deepest sky stop), not inverted:
+
+| | Sunset (default) | Waves |
+|---|---|---|
+| Light | Coral → apricot → gold sky down the top of the page, low sun behind the hero, warm cream below. Ember primary | Same sunset sky fading into sea-glass blue toward the footer, two wave swells cresting into a sea-coloured footer. Deep-sea primary, peach hovers |
+| Dark | Warm near-black built for photography, lifted sienna primary | Moonlight on the ocean: deep navy, moon glow top-right, silver-blue primary with ink text, the same swells in night-sea blue |
+
+The sky is `--sky`, painted on `body` so it spans the page (scrolling moves from
+sky toward sea), never fixed-attached. Roles below hold in all four looks.
 
 | Token | Role |
 |---|---|

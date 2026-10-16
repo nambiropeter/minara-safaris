@@ -25,11 +25,14 @@ export { CaretLeftIcon as CaretLeft } from "@phosphor-icons/react/dist/ssr/Caret
 export { CaretRightIcon as CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 export { CheckIcon as Check } from "@phosphor-icons/react/dist/ssr/Check";
 export { ClockIcon as Clock } from "@phosphor-icons/react/dist/ssr/Clock";
+export { EnvelopeSimpleIcon as EnvelopeSimple } from "@phosphor-icons/react/dist/ssr/EnvelopeSimple";
 export { ListIcon as List } from "@phosphor-icons/react/dist/ssr/List";
 export { MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 export { MapPinIcon as MapPin } from "@phosphor-icons/react/dist/ssr/MapPin";
 export { MoonIcon as Moon } from "@phosphor-icons/react/dist/ssr/Moon";
+export { SunHorizonIcon as SunHorizon } from "@phosphor-icons/react/dist/ssr/SunHorizon";
 export { SunIcon as Sun } from "@phosphor-icons/react/dist/ssr/Sun";
 export { UsersIcon as Users } from "@phosphor-icons/react/dist/ssr/Users";
 export { WhatsappLogoIcon as WhatsappLogo } from "@phosphor-icons/react/dist/ssr/WhatsappLogo";
+export { WavesIcon as Waves } from "@phosphor-icons/react/dist/ssr/Waves";
 export { XIcon as X } from "@phosphor-icons/react/dist/ssr/X";

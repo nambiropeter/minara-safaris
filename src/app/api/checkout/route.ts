@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import configPromise from "@payload-config";
 import { generateBookingToken } from "@/lib/booking-token";
+import { convertPrice, getKesRates, isDisplayCurrency } from "@/lib/exchange-rates";
 import { priceOrder, type PriceablePackage } from "@/lib/pricing";
 import { allowRequest } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
@@ -32,6 +33,8 @@ const checkoutSchema = z.strictObject({
   travelDate: z.iso.date().optional(),
   adults: z.coerce.number().int().min(1).max(50).optional(),
   children: z.coerce.number().int().min(0).max(50).optional(),
+  /** A currency code, never a rate — the rate is looked up server-side. */
+  currency: z.enum(["KES", "USD"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -69,12 +72,28 @@ export async function POST(request: Request) {
     limit: 10,
     depth: 0,
   });
+
+  // Converting here, before pricing, means the order, Stripe and the invoice
+  // all carry the chosen currency. The same `convertPrice` rendered the figure
+  // the visitor saw, so the charge matches it. No rate → native currency.
+  const rates = data.currency ? await getKesRates() : null;
+  const target = rates ? data.currency : undefined;
   const catalogue = new Map<string, PriceablePackage>(
-    found.docs.map((d) => [
-      String(d.id),
-      { id: d.id, title: d.title, priceFrom: d.priceFrom, currency: d.currency },
-    ]),
+    found.docs.map((d) => {
+      const native = isDisplayCurrency(d.currency) ? d.currency : "KES";
+      const to = target ?? native;
+      return [
+        String(d.id),
+        {
+          id: d.id,
+          title: d.title,
+          priceFrom: convertPrice(d.priceFrom, native, to, rates?.usdPerKes ?? 1),
+          currency: to,
+        },
+      ];
+    }),
   );
+  const converted = found.docs.some((d) => target && (d.currency ?? "KES") !== target);
 
   let priced;
   try {
@@ -101,6 +120,10 @@ export async function POST(request: Request) {
       adults: data.adults,
       children: data.children,
       accessTokenHash: hash,
+      staffNotes:
+        converted && rates
+          ? `Charged in ${target} at 1 KES = ${rates.usdPerKes} USD (exchangerate-api, ${rates.updatedAt}).`
+          : undefined,
     },
   });
 

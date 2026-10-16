@@ -86,7 +86,9 @@ export async function POST(request: Request) {
     },
   });
 
-  await notifyLead(lead).catch(() => {});
+  await notifyLead(lead).catch((error) => {
+    console.error("lead notification failed", error, { leadId: lead.id });
+  });
 
   return NextResponse.json({ ok: true });
 }

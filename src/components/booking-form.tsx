@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useCurrencyPreference, useUsdPerKes } from "@/components/currency-provider";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 
@@ -23,6 +24,8 @@ export function BookingForm({ packageId, packageSlug }: Props) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const preferred = useCurrencyPreference();
+  const usdPerKes = useUsdPerKes();
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,6 +43,8 @@ export function BookingForm({ packageId, packageSlug }: Props) {
       travelDate: form.get("travelDate") || undefined,
       adults,
       children,
+      // Only the code travels; the server applies its own cached rate.
+      currency: preferred && usdPerKes ? preferred : undefined,
     };
 
     try {
