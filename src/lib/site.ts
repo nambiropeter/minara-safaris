@@ -28,6 +28,7 @@ export const plausibleDomain = (() => {
 export const nav = [
   { href: "/packages", label: "Packages" },
   { href: "/destinations", label: "Destinations" },
+  { href: "/hotels", label: "Hotels" },
   { href: "/journal", label: "Journal" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

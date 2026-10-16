@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPublicPages(),
   ]);
 
-  const staticRoutes = ["", "/packages", "/destinations", "/journal", "/contact"].map((path) => ({
+  const staticRoutes = ["", "/packages", "/destinations", "/hotels", "/journal", "/contact"].map((path) => ({
     url: `${site.url}${path}`,
   }));
 

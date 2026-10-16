@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock("@/lib/hotelbeds", () => ({ getHotelbeds: () => h.config.current }));
 vi.mock("@/lib/hotel-search", () => ({ searchHotels: h.searchHotels }));
+vi.mock("@/lib/hotel-content", () => ({ getCoverImages: async () => new Map([[7, "https://photos.example/7.jpg"]]) }));
 vi.mock("@/lib/exchange-rates", () => ({ getKesRates: h.getKesRates }));
 
 import { issueSession, SESSION_COOKIE } from "@/lib/hotel-session";
@@ -62,7 +63,17 @@ describe("POST /api/hotels/search", () => {
     expect(body).toEqual({
       nights: 3,
       currency: "KES",
-      hotels: [{ code: 7, name: "Hotel A", category: "4 STARS", destination: "Nairobi", zone: "Westlands", from: 1_725_000 }],
+      hotels: [
+        {
+          code: 7,
+          name: "Hotel A",
+          category: "4 STARS",
+          destination: "Nairobi",
+          zone: "Westlands",
+          image: "https://photos.example/7.jpg",
+          from: 1_725_000,
+        },
+      ],
     });
     expect(JSON.stringify(body)).not.toContain("netFrom");
     expect(h.searchHotels).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ destination: "NAI" }));

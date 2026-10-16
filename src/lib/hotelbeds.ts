@@ -34,23 +34,28 @@ export class HotelbedsError extends Error {
   }
 }
 
-async function post<T>(config: HotelbedsConfig, path: string, body: unknown): Promise<T> {
+async function call<T>(config: HotelbedsConfig, method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
   const signature = signRequest(config.apiKey, config.secret, Math.floor(Date.now() / 1000));
   const response = await fetch(`${config.baseUrl}${path}`, {
-    method: "POST",
+    method,
     headers: {
       "Api-key": config.apiKey,
       "X-Signature": signature,
       Accept: "application/json",
-      "Content-Type": "application/json",
+      ...(body !== undefined && { "Content-Type": "application/json" }),
     },
-    body: JSON.stringify(body),
+    ...(body !== undefined && { body: JSON.stringify(body) }),
     cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new HotelbedsError(response.status, await response.text().catch(() => ""));
   return (await response.json()) as T;
 }
+
+const post = <T>(config: HotelbedsConfig, path: string, body: unknown) => call<T>(config, "POST", path, body);
+
+/** Content API reads. Not look-to-book traffic, but cached by the caller all the same. */
+export const get = <T>(config: HotelbedsConfig, path: string) => call<T>(config, "GET", path);
 
 export type AvailabilityParams = {
   checkIn: string;

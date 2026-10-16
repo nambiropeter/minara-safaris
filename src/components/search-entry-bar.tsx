@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const TABS = [
   { key: "safaris", label: "Safaris & Tours", href: "/packages", active: true },
-  { key: "hotels", label: "Hotels", href: "/contact", active: false },
+  { key: "hotels", label: "Hotels", href: "/hotels", active: false },
   { key: "custom", label: "Custom Trip", href: "/contact", active: false },
 ] as const;
 

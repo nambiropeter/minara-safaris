@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getHotelbeds } from "@/lib/hotelbeds";
+import { getCoverImages } from "@/lib/hotel-content";
 import { sellPrice } from "@/lib/hotel-pricing";
 import { guardSession, invalidRequest, sellContext, stayFields, stayNights } from "@/lib/hotel-request";
 import { searchHotels } from "@/lib/hotel-search";
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const hotels = await searchHotels(config, search);
+    const covers = await getCoverImages(config, hotels.map((hotel) => hotel.code));
     return NextResponse.json(
       {
         nights,
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
             console.error("hotelbeds returned a non-EUR price", { code: hotel.code, supplierCurrency });
             return [];
           }
-          return [{ ...hotel, from: sellPrice(netFrom, ctx) }];
+          return [{ ...hotel, image: covers.get(hotel.code) ?? null, from: sellPrice(netFrom, ctx) }];
         }),
       },
       { headers: { "Cache-Control": "private, no-store" } },
