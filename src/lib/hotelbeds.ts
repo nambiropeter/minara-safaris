@@ -56,6 +56,8 @@ export type AvailabilityParams = {
   checkIn: string;
   checkOut: string;
   destination: string;
+  /** Hotelbeds zone inside the destination, e.g. Diani is zone 9 of MBA. */
+  zone?: number;
   adults: number;
   childAges: number[];
 };
@@ -101,7 +103,7 @@ export async function searchAvailability(
         ...(paxes.length > 0 && { paxes }),
       },
     ],
-    destination: { code: params.destination },
+    destination: { code: params.destination, ...(params.zone !== undefined && { zone: params.zone }) },
   });
 
   return (raw.hotels?.hotels ?? []).map((hotel) => ({

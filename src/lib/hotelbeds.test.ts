@@ -66,6 +66,15 @@ describe("searchAvailability", () => {
     ]);
   });
 
+  it("sends the zone only when one is given", async () => {
+    // A fresh Response per call: a body can only be read once.
+    fetchMock.mockImplementation(async () => Response.json({}));
+    await searchAvailability(config, { ...params, destination: "MBA", zone: 9 });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).destination).toEqual({ code: "MBA", zone: 9 });
+    await searchAvailability(config, params);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).destination).toEqual({ code: "NBO" });
+  });
+
   it("omits paxes when there are no children", async () => {
     fetchMock.mockResolvedValue(Response.json({}));
     await searchAvailability(config, params);
