@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload';
 
+import { refundOrder } from './endpoints/refund-order.ts';
 import { assertNotRepricingPaidOrder } from './hooks/freeze-paid-orders.ts';
 
 /**
@@ -23,6 +24,7 @@ export const Orders: CollectionConfig = {
     defaultColumns: ['orderNumber', 'status', 'customerEmail', 'amountTotal', 'createdAt'],
   },
   enableQueryPresets: true,
+  endpoints: [{ path: '/:id/refund', method: 'post', handler: refundOrder }],
   hooks: {
     beforeChange: [
       ({ operation, originalDoc, data }) => {
@@ -92,5 +94,10 @@ export const Orders: CollectionConfig = {
     { name: 'accessTokenHash', type: 'text', index: true, unique: true, admin: { hidden: true } },
     { name: 'invoice', type: 'upload', relationTo: 'media' },
     { name: 'staffNotes', type: 'textarea' },
+    {
+      name: 'refund',
+      type: 'ui',
+      admin: { components: { Field: '@/components/admin/refund-order#RefundOrder' } },
+    },
   ],
 };
