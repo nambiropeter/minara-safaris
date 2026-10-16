@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CtaBanner } from "@/components/cta-banner";
 import { PackageCard } from "@/components/package-card";
+import { EmailCta } from "@/components/email-cta";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
 import {
   asMedia,
@@ -83,6 +84,7 @@ export default async function DestinationDetailPage({ params }: RouteProps) {
               label="Ask about this destination"
               className="mt-6 w-full"
             />
+            <EmailCta className="mt-3 w-full" />
           </div>
         </aside>
       </div>

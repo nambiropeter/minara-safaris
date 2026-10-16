@@ -1,33 +1,40 @@
-import { Resend } from "resend";
-
 import type { Lead } from "@/payload-types";
 
 /**
- * Staff notification inbox and sender are unconfirmed (PRODUCT.md) — set
- * RESEND_API_KEY, RESEND_FROM_EMAIL and LEADS_NOTIFICATION_EMAIL to enable.
- * No-ops until all three exist, same pattern as `whatsappHref`.
+ * Emails the team about a new enquiry by forwarding it to Formspree, which
+ * delivers to the inbox configured on the form in Formspree's dashboard.
+ * The lead is already saved in Payload before this runs, so a Formspree
+ * outage loses the email, never the enquiry.
+ *
+ * Server-side on purpose: the browser posts to our own `/api/leads` (honeypot,
+ * rate limit, time-to-submit), so Formspree only ever sees vetted leads.
+ * No-ops until FORMSPREE_FORM_ID is set.
  */
 export async function notifyLead(lead: Lead): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  const to = process.env.LEADS_NOTIFICATION_EMAIL;
-  if (!apiKey || !from || !to) return;
+  const formId = process.env.FORMSPREE_FORM_ID;
+  if (!formId) return;
 
-  const resend = new Resend(apiKey);
-  await resend.emails.send({
-    from,
-    to,
-    subject: `New enquiry: ${lead.name}`,
-    text: [
-      `Name: ${lead.name}`,
-      `Email: ${lead.email}`,
-      lead.phone && `Phone: ${lead.phone}`,
-      lead.travelDates && `Travel dates: ${lead.travelDates}`,
-      lead.travellers && `Travellers: ${lead.travellers}`,
-      lead.message && `Message: ${lead.message}`,
-      lead.source && `Source: ${lead.source}`,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+  const packageTitle =
+    lead.package && typeof lead.package === "object" ? lead.package.title : undefined;
+
+  const res = await fetch(`https://formspree.io/f/${formId}`, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      // Formspree sets Reply-To from `email`, so replying answers the traveller.
+      email: lead.email,
+      _subject: `New enquiry: ${lead.name}${packageTitle ? ` (${packageTitle})` : ""}`,
+      name: lead.name,
+      phone: lead.phone ?? undefined,
+      package: packageTitle,
+      travelDates: lead.travelDates ?? undefined,
+      travellers: lead.travellers ?? undefined,
+      message: lead.message ?? undefined,
+      source: lead.source ?? undefined,
+    }),
   });
+
+  if (!res.ok) {
+    throw new Error(`Formspree rejected lead ${lead.id}: ${res.status} ${await res.text()}`);
+  }
 }
