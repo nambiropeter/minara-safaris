@@ -55,8 +55,14 @@ describe("hotelPost", () => {
     fetchMock.mockImplementation(async () => Response.json({ error: "Too many requests." }, { status: 429 }));
     const pending = hotelPost("/api/hotels/search", {});
     await vi.advanceTimersByTimeAsync(2200);
-    expect(await pending).toEqual({ ok: false, status: 429, error: "Too many requests." });
+    expect(await pending).toEqual({ ok: false, status: 429, error: "Too many requests.", body: { error: "Too many requests." } });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the server's body on a failure, so a price change can show its new figure", async () => {
+    fetchMock.mockImplementation(async () => Response.json({ error: "The price has changed.", priceChanged: true, from: 1_725_000 }, { status: 409 }));
+    const result = await hotelPost("/api/hotels/book", {});
+    expect(result).toMatchObject({ ok: false, status: 409, body: { priceChanged: true, from: 1_725_000 } });
   });
 
   it("reports a network failure without throwing", async () => {

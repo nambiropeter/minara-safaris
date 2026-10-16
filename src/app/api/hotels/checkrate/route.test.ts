@@ -34,6 +34,7 @@ function call(body: unknown, session: string | null = issueSession(Date.now() - 
 
 const checked = (over: Record<string, unknown> = {}) => ({
   currency: "EUR",
+  comments: "Deposit on arrival. Minimum check-in age 18.",
   rate: {
     rateKey: "REISSUED",
     rateType: "BOOKABLE",
@@ -69,6 +70,7 @@ describe("POST /api/hotels/checkrate", () => {
     expect(body.from).toBe(1_725_000);
     expect(body.priceChanged).toBe(false);
     expect(body.board).toEqual({ code: "BB", name: "BED AND BREAKFAST" });
+    expect(body.comments).toBe("Deposit on arrival. Minimum check-in age 18.");
     expect(body.cancellation.freeCancellationUntil).toBeNull();
     expect(JSON.stringify(body)).not.toContain('"net"');
   });

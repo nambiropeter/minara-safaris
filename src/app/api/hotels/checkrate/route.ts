@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         // Booking must use this key, not the one the browser sent: Hotelbeds may reissue it.
         rateKey: checked.rate.rateKey,
         board: { code: checked.rate.boardCode, name: checked.rate.boardName },
+        comments: checked.comments,
         from,
         previousFrom: shownFrom,
         priceChanged: from !== shownFrom,

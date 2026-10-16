@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCurrencyPreference } from "@/components/currency-provider";
+import { HotelBookingForm } from "@/components/hotel-booking-form";
 import { HotelPrice } from "@/components/hotel-price";
 import { Check } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
   const [changed, setChanged] = useState<CheckrateResponse | null>(null);
   const [confirmed, setConfirmed] = useState<CheckrateResponse | null>(null);
   const [problem, setProblem] = useState("");
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     if (!stay) return;
@@ -56,6 +58,7 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
     setChosen(null);
     setChanged(null);
     setConfirmed(null);
+    setPaying(false);
     setProblem("");
   }
 
@@ -143,7 +146,20 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
             <li key={line}>{line}</li>
           ))}
         </ul>
+
+        {confirmed.comments && (
+          <div className="mt-4">
+            <p className="text-label font-medium">Good to know</p>
+            <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{confirmed.comments}</p>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          {!paying && (
+            <Button type="button" size="cta" onClick={() => setPaying(true)}>
+              Continue to payment
+            </Button>
+          )}
           <WhatsAppCta
             label="Book with a consultant"
             context={`${hotelName}, ${chosen.room} (${confirmed.board.name.toLowerCase()}), ${stay.checkIn} to ${stay.checkOut}, ${guests}`}
@@ -152,6 +168,17 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
             Choose a different room
           </Button>
         </div>
+
+        {paying && (
+          <HotelBookingForm
+            rateKey={confirmed.rateKey}
+            from={confirmed.from}
+            currency={currency}
+            adults={stay.adults}
+            childAges={stay.childAges}
+            hotelName={hotelName}
+          />
+        )}
       </div>
     );
   }

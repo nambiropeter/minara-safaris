@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { HotelBookingDetails } from "@/components/hotel-booking-details";
 import { bookingStatusCopy, hasReceipt } from "@/lib/booking-status-copy";
 import { formatMoney, type Currency } from "@/lib/money";
 import { findOrderByToken } from "@/lib/orders";
@@ -25,10 +26,13 @@ export default async function BookingPage({
 
   const currency = order.currency as Currency;
   const { heading, body, totalLabel } = bookingStatusCopy(order.status);
+  // A hotel moves from paid to booked a few seconds after payment, so keep refreshing until it settles.
+  const hotelInFlight =
+    order.supplier?.name === "hotelbeds" && (order.supplier.status === "pending" || order.supplier.status === "booking");
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      {order.status === "pending" && <BookingStatusPoller />}
+      {(order.status === "pending" || hotelInFlight) && <BookingStatusPoller />}
       <p className="text-label text-muted-foreground">Booking {order.orderNumber}</p>
       <h1 className="text-title mt-1">{heading}</h1>
 
@@ -49,6 +53,8 @@ export default async function BookingPage({
           <dd>{formatMoney(order.amountTotal, currency)}</dd>
         </div>
       </dl>
+
+      <HotelBookingDetails order={order} />
 
       {hasReceipt(order.status) && order.stripe?.paymentIntentId && (
         <div className="mt-8">

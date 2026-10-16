@@ -14,7 +14,9 @@ export async function ensureHotelSession(): Promise<void> {
   await fetch("/api/hotels/session", { method: "POST" }).catch(() => {});
 }
 
-export type HotelApiResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
+export type HotelApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number; error: string; /** The server's JSON, e.g. a price change's new figure. */ body: Record<string, unknown> };
 
 export async function hotelPost<T>(path: string, body: unknown): Promise<HotelApiResult<T>> {
   for (let attempt = 0; ; attempt++) {
@@ -26,7 +28,7 @@ export async function hotelPost<T>(path: string, body: unknown): Promise<HotelAp
         body: JSON.stringify(body),
       });
     } catch {
-      return { ok: false, status: 0, error: "Could not reach the server. Check your connection and try again." };
+      return { ok: false, status: 0, error: "Could not reach the server. Check your connection and try again.", body: {} };
     }
     const data = await response.json().catch(() => ({}));
     if (response.ok) return { ok: true, data: data as T };
@@ -40,7 +42,12 @@ export async function hotelPost<T>(path: string, body: unknown): Promise<HotelAp
       await sleep(MIN_SESSION_AGE_MS);
       continue;
     }
-    return { ok: false, status: response.status, error: (data as { error?: string }).error ?? "Something went wrong. Please try again." };
+    return {
+      ok: false,
+      status: response.status,
+      error: (data as { error?: string }).error ?? "Something went wrong. Please try again.",
+      body: data as Record<string, unknown>,
+    };
   }
 }
 
@@ -71,6 +78,8 @@ export type RatesResponse = {
 export type CheckrateResponse = {
   rateKey: string;
   board: { code: string; name: string };
+  /** Check-in hours, deposits, minimum age: shown before anyone pays. */
+  comments: string;
   from: number;
   previousFrom: number;
   priceChanged: boolean;
@@ -103,3 +112,5 @@ export function parseStay(params: URLSearchParams): HotelStay | null {
     .slice(0, 6);
   return { checkIn, checkOut, adults, childAges };
 }
+
+export type BookResponse = { url: string | null };
