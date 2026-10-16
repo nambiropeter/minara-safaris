@@ -116,3 +116,109 @@ export async function searchAvailability(
     netFrom: Number(hotel.minRate),
   }));
 }
+
+export type CancellationPolicy = { amount: number; from: string };
+
+export type HotelRate = {
+  /** Opaque. Passed back to Hotelbeds byte for byte: never parse, trim or re-encode it. */
+  rateKey: string;
+  rateType: string;
+  net: number;
+  boardCode: string;
+  boardName: string;
+  paymentType: string;
+  /** Earliest first. A fee applies from each `from`; before the first one cancelling is free. */
+  cancellationPolicies: CancellationPolicy[];
+};
+
+export type HotelRoom = { code: string; name: string; rates: HotelRate[] };
+
+type RawRate = {
+  rateKey: string;
+  rateType: string;
+  net: string;
+  boardCode: string;
+  boardName: string;
+  paymentType: string;
+  packaging?: boolean;
+  cancellationPolicies?: { amount: string; from: string }[];
+};
+
+function parseRate(raw: RawRate): HotelRate {
+  return {
+    rateKey: raw.rateKey,
+    rateType: raw.rateType,
+    net: Number(raw.net),
+    boardCode: raw.boardCode,
+    boardName: raw.boardName,
+    paymentType: raw.paymentType,
+    cancellationPolicies: (raw.cancellationPolicies ?? [])
+      .map((p) => ({ amount: Number(p.amount), from: p.from }))
+      .sort((a, b) => Date.parse(a.from) - Date.parse(b.from)),
+  };
+}
+
+export type HotelRates = { code: number; name: string; currency: string; rooms: HotelRoom[] };
+
+/**
+ * Rooms and rates for one hotel, limited to what we can actually sell.
+ * - Packaging rates are dropped: Hotelbeds marks them as sellable only inside a
+ *   package, and the request-level `filter.packaging` is accepted but ignored
+ *   (verified on the test host), so we filter here.
+ *   ponytail: conservative reading of the packaging flag; confirm at certification.
+ * - Only `AT_WEB` rates: we collect payment through Stripe, so a pay-at-hotel
+ *   rate would skip our checkout entirely.
+ */
+export async function getHotelRates(
+  config: HotelbedsConfig,
+  hotelCode: number,
+  params: Pick<AvailabilityParams, "checkIn" | "checkOut" | "adults" | "childAges">,
+): Promise<HotelRates | null> {
+  const paxes = params.childAges.map((age) => ({ type: "CH", age }));
+  const raw = await post<{
+    hotels?: {
+      hotels?: { code: number; name: string; currency: string; rooms?: { code: string; name: string; rates: RawRate[] }[] }[];
+    };
+  }>(config, "/hotel-api/1.0/hotels", {
+    stay: { checkIn: params.checkIn, checkOut: params.checkOut },
+    occupancies: [
+      {
+        rooms: 1,
+        adults: params.adults,
+        children: params.childAges.length,
+        ...(paxes.length > 0 && { paxes }),
+      },
+    ],
+    hotels: { hotel: [hotelCode] },
+  });
+
+  const hotel = raw.hotels?.hotels?.[0];
+  if (!hotel) return null;
+  const rooms = (hotel.rooms ?? [])
+    .map((room) => ({
+      code: room.code,
+      name: room.name,
+      rates: room.rates.filter((rate) => !rate.packaging && rate.paymentType === "AT_WEB").map(parseRate),
+    }))
+    .filter((room) => room.rates.length > 0);
+  return { code: hotel.code, name: hotel.name, currency: hotel.currency, rooms };
+}
+
+export type CheckedRate = { currency: string; rate: HotelRate };
+
+/**
+ * Re-prices one rate with Hotelbeds right before we ask the customer to pay.
+ * Required by the contract, not optional: rates move, and `RECHECK` rates are not
+ * bookable until this confirms them. Expects exactly one room with one rate back.
+ */
+export async function checkRate(config: HotelbedsConfig, rateKey: string): Promise<CheckedRate> {
+  const raw = await post<{
+    hotel?: { currency: string; rooms?: { rates?: RawRate[] }[] };
+  }>(config, "/hotel-api/1.0/checkrates", { rooms: [{ rateKey }] });
+
+  const rate = raw.hotel?.rooms?.[0]?.rates?.[0];
+  if (!raw.hotel || !rate || (raw.hotel.rooms?.length ?? 0) !== 1 || (raw.hotel.rooms?.[0]?.rates?.length ?? 0) !== 1) {
+    throw new HotelbedsError(502, "Unexpected checkrates response shape");
+  }
+  return { currency: raw.hotel.currency, rate: parseRate(rate) };
+}

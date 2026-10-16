@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { applyMargin, eurToDisplay, marginBpsFromEnv } from "./hotel-pricing";
+import { applyMargin, describeCancellation, eurToDisplay, marginBpsFromEnv, sellPrice } from "./hotel-pricing";
 
 describe("applyMargin", () => {
   it("adds the margin in minor units", () => {
@@ -43,6 +43,35 @@ describe("eurToDisplay", () => {
 
   it("refuses to guess without a EUR rate", () => {
     expect(() => eurToDisplay(10_000, "KES", { usdPerKes: 0.0077, updatedAt: "" })).toThrow();
+  });
+});
+
+describe("sellPrice and describeCancellation", () => {
+  const ctx = { marginBps: 1500, currency: "KES" as const, rates: { usdPerKes: 0.0077, eurPerKes: 1 / 150, updatedAt: "" } };
+  const now = Date.parse("2027-02-10T00:00:00Z");
+
+  it("applies margin then FX", () => {
+    expect(sellPrice(100, ctx)).toBe(1_725_000); // EUR 115 = KES 17,250
+  });
+
+  it("offers free cancellation only while the first fee is still in the future", () => {
+    const open = describeCancellation([{ amount: 50, from: "2027-02-20T23:59:00+03:00" }], ctx, now);
+    expect(open.freeCancellationUntil).toBe("2027-02-20T23:59:00+03:00");
+    expect(open.policies[0].amount).toBe(sellPrice(50, ctx));
+  });
+
+  it("treats a fee that has already started as non-refundable", () => {
+    const nrf = describeCancellation([{ amount: 100, from: "2027-02-01T23:59:00+03:00" }], ctx, now);
+    expect(nrf.freeCancellationUntil).toBeNull();
+  });
+
+  it("carries the fee through margin so a non-refundable fee equals the price", () => {
+    const nrf = describeCancellation([{ amount: 100, from: "2027-02-01T00:00:00Z" }], ctx, now);
+    expect(nrf.policies[0].amount).toBe(sellPrice(100, ctx));
+  });
+
+  it("has no free window when there are no policies", () => {
+    expect(describeCancellation([], ctx, now)).toEqual({ freeCancellationUntil: null, policies: [] });
   });
 });
 

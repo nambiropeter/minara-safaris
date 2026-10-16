@@ -1,4 +1,5 @@
 import type { DisplayCurrency, KesRates } from "./exchange-rates";
+import type { CancellationPolicy } from "./hotelbeds";
 
 /**
  * Sell price from a supplier net price. Integer minor units throughout (all
@@ -28,6 +29,26 @@ export function eurToDisplay(eurMinor: number, to: DisplayCurrency, rates: KesRa
   const eur = eurMinor / 100;
   if (to === "KES") return Math.ceil(eur / eurPerKes - 1e-9) * 100;
   return Math.ceil(eur * (usdPerKes / eurPerKes) * 100 - 1e-9);
+}
+
+export type SellContext = { marginBps: number; currency: DisplayCurrency; rates: KesRates };
+
+/** Supplier net (EUR, major units) to the price the visitor sees and pays: margin, then FX. */
+export const sellPrice = (netMajor: number, ctx: SellContext): number =>
+  eurToDisplay(applyMargin(netMajor, ctx.marginBps), ctx.currency, ctx.rates);
+
+/**
+ * Cancellation terms as the customer sees them. Fees are Hotelbeds' to set; we only
+ * carry them through the same margin and FX as the price, so a non-refundable rate
+ * shows a fee equal to the price rather than to our cost. Free cancellation exists
+ * only if the first fee starts in the future.
+ */
+export function describeCancellation(policies: CancellationPolicy[], ctx: SellContext, now = Date.now()) {
+  const first = policies[0];
+  return {
+    freeCancellationUntil: first && Date.parse(first.from) > now ? first.from : null,
+    policies: policies.map((p) => ({ from: p.from, amount: sellPrice(p.amount, ctx) })),
+  };
 }
 
 export function marginBpsFromEnv(): number {
