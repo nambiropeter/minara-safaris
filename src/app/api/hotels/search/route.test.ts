@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   searchHotels: vi.fn(),
   getKesRates: vi.fn(),
+  settings: { current: { enabled: true, marginBps: 1500 } as { enabled: boolean; marginBps: number | null } },
   config: { current: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
 }));
 
@@ -11,6 +12,7 @@ vi.mock("@/lib/hotelbeds", () => ({ getHotelbeds: () => h.config.current }));
 vi.mock("@/lib/hotel-search", () => ({ searchHotels: h.searchHotels }));
 vi.mock("@/lib/hotel-content", () => ({ getCoverImages: async () => new Map([[7, "https://photos.example/7.jpg"]]) }));
 vi.mock("@/lib/exchange-rates", () => ({ getKesRates: h.getKesRates }));
+vi.mock("@/lib/hotel-settings", () => ({ getHotelSettings: async () => h.settings.current }));
 
 import { issueSession, SESSION_COOKIE } from "@/lib/hotel-session";
 import { POST } from "./route";
@@ -32,7 +34,7 @@ function call(body: unknown, session: string | null = issueSession(Date.now() - 
 
 describe("POST /api/hotels/search", () => {
   beforeEach(() => {
-    vi.stubEnv("HOTEL_MARGIN_BPS", "1500");
+    h.settings.current = { enabled: true, marginBps: 1500 };
     h.config.current = { apiKey: "k", secret: "s", baseUrl: "https://x" };
     h.searchHotels.mockReset();
     h.getKesRates.mockReset();
@@ -107,9 +109,16 @@ describe("POST /api/hotels/search", () => {
     expect((await call(valid)).status).toBe(503);
   });
 
-  it("is unavailable when the margin is not configured, rather than selling at cost", async () => {
-    vi.stubEnv("HOTEL_MARGIN_BPS", "");
+  it("is unavailable when no margin exists anywhere, rather than selling at cost", async () => {
+    h.settings.current = { enabled: true, marginBps: null };
     expect((await call(valid)).status).toBe(503);
+    expect(h.searchHotels).not.toHaveBeenCalled();
+  });
+
+  it("is unavailable when staff have switched hotels off", async () => {
+    h.settings.current = { enabled: false, marginBps: 1500 };
+    expect((await call(valid)).status).toBe(503);
+    expect(h.searchHotels).not.toHaveBeenCalled();
   });
 
   it("turns a supplier failure into a 502", async () => {

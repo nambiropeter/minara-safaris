@@ -11,8 +11,10 @@ Status: **open** = not done, **verify** = built but not proven, **decision** = n
 
 | # | Caveat | Status | Closes when |
 |---|---|---|---|
-| 1 | **Search and content caches are in-memory**, per process. They do not protect the look-to-book ratio across serverless instances, and the ratio is contractual. (`hotel-search.ts`, `hotel-content.ts`, `rate-limit.ts`) | open | Cache and search/booking counters live in Postgres (spec step 3) |
-| 2 | **No call counters**, so the ratio can't be checked at all yet | open | Counters stored per search / checkrate / booking |
+| 1 | **Search and rates are cached in Postgres** (`hotel-cache`, 20 min), shared by every instance. Built and unit-tested; never run against a real database because the tables don't exist in the dev DB yet (#29). The hotel *content* cache (photos, descriptions) is still in-memory, which is fine: it isn't look-to-book traffic | verify | Seen live: a repeat search adds a `hotel_cache` row once and no second `hotel_calls` row |
+| 2 | **Call counters** (`hotel-calls`): one row per request that reaches Hotelbeds, recorded before the call. Same status as #1. The `booking` kind stays unused until step 4 | verify | Seen live, and the ratio read off the admin list |
+| 2a | **Cache race:** two instances missing the same key at the same instant both call Hotelbeds. Accepted at this volume | open | A lock, if it ever shows in the counters |
+| 2b | **The rate limiter and the per-session limits are still in-memory per instance** (`rate-limit.ts`), so on serverless the limits are looser than they read. The cache no longer has this problem | open | Limits moved to Postgres or Redis |
 | 3 | **Production needs a commercial agreement and certification** (CheckRate before booking, cancellation display, error handling, look-to-book). Onboarding terms were never web-verified | open | Agreement signed, certification passed, live key and `HOTELBEDS_BASE_URL` set |
 | 4 | **Taxes and fees payable at the hotel are not shown.** Rates may carry them; not investigated. Certification may check this | verify | Checked against a real rate object, displayed if present |
 | 5 | **Packaging rates are dropped, only `AT_WEB` rates are sold.** A conservative reading: Hotelbeds' own `filter.packaging` is accepted but ignored | verify | Confirmed with Hotelbeds at certification |
@@ -25,8 +27,8 @@ Status: **open** = not done, **verify** = built but not proven, **decision** = n
 | 7 | **No `supplier` group on `Orders`** (reference, rateKey, net, sell, fxRate, cancellation policies) and no freeze on those figures | open | Added with a migration; `freeze-paid-orders.ts` extended |
 | 8 | **No auto-refund if Hotelbeds fails after payment.** The refund helper exists (`refund-order.ts`) but is staff-only | open | Shared refund helper; webhook calls it; booking step has its own idempotency marker |
 | 9 | **Admin refund ignores the Hotelbeds booking.** Refunding a paid hotel order would leave the supplier booking live | open | Refund cancels the Hotelbeds booking first, or blocks and shows the policy |
-| 10 | **Margin comes from `HOTEL_MARGIN_BPS` (env)**, not the staff-editable `hotel-settings` global. Changing it needs a deploy | open | Global added, env removed |
-| 11 | **No `/api/healthz` or `/api/readyz`** | open | Added (readyz must not call Hotelbeds) |
+| 10 | **Margin is now a staff-editable global** (`hotel-settings`: margin percent plus an on/off switch), remembered for a minute per instance. `HOTEL_MARGIN_BPS` stays as a bootstrap fallback until a margin is saved; with neither, search refuses to price. Unit-tested, not seen in the admin | verify | Margin saved in the admin and seen to change a price; then drop the env var |
+| 11 | **`/api/healthz` (liveness) and `/api/readyz` (readiness) exist.** readyz checks the database only and never calls Hotelbeds. Unit-tested, not hit on a running server | verify | Probed on a running instance |
 | 12 | **Combined package + hotel checkout** not built. Decision: standalone hotel booking first | decision | `/hotels?package=<id>` carries the package into one checkout; partial-failure and partial-refund rules decided |
 | 13 | **EUR → KES/USD only**; the EUR net and the rate are not yet stored on an order, so the FX margin risk isn't recorded | open | `fxRate` snapshotted at order creation (with #7) |
 
@@ -45,7 +47,7 @@ Status: **open** = not done, **verify** = built but not proven, **decision** = n
 | # | Caveat | Status | Closes when |
 |---|---|---|---|
 | 19 | **Dev DB: the two new migrations are not recorded in `payload_migrations`** although their columns exist (`packages.accommodation`, `destinations.hotel_destination`). A later `pnpm migrate` on that DB would try to re-run them and fail on "already exists" | open | Rows inserted by hand, or the DB rebuilt from migrations |
-| 20 | **`pnpm seed:hotels` has not been run.** Additive; adds six land-only packages, four destinations, seven photos | open | Run once, counts checked after |
+| 29 | **Step 3's migration is generated but not applied to the dev DB**, so `hotel_cache`, `hotel_calls` and `hotel_settings` don't exist there yet. Until they do, the cache and counters log an error and fall through, and settings use the env margin | open | Applied (see #19 for the dev DB's migration-record problem) |
 | 21 | **Hotel areas are a database enum.** Adding a place means a code change in `hotel-destinations.ts` plus a one-line migration | decision | Accept it, or switch the field to plain text |
 | 22 | **Destination codes verified on the sandbox only.** Zanzibar returned 0 hotels there | verify | Re-checked on the production host |
 | 23 | **Sandbox prices can be extreme** (a 3-night B&B at KES 3.3 million against KES 44,000 for the cheapest in the same room type). Matches the sandbox's own €22,217 maximum | dev-only | Not an issue on live data; re-check |
@@ -68,4 +70,4 @@ Status: **open** = not done, **verify** = built but not proven, **decision** = n
 
 ## Closed
 
-_Nothing yet._
+- **#20: `pnpm seed:hotels` run** (2026-10-16). Created 7 photos, 4 destinations, 6 packages and mapped the 4 existing destinations. Verified against the database afterwards: orders, leads, articles and users unchanged. The uploaded files are committed under `media/` (`a36330b`).

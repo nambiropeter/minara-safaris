@@ -21,7 +21,7 @@ Lead-generation website for a Kenyan/East African safari & tour operator, modell
 | Media | Cloudflare R2 (S3-compatible, `@payloadcms/storage-s3`) via `next/image` — decided over Cloudinary; Next's own Image Optimization API already handles resizing, so Cloudinary's transform pipeline added nothing |
 | Email | Formspree for enquiry notifications (forwarded server-side from `POST /api/leads`, `FORMSPREE_FORM_ID`); Resend for booking confirmations, which need a customer recipient and a PDF attachment |
 | Exchange rates | exchangerate-api.com, KES base, cached 24h via `fetch` revalidate (`src/lib/exchange-rates.ts`) — never fetched per visit or from the browser |
-| Hotels | Hotelbeds APItude, server-side only (`src/lib/hotelbeds.ts`). Test host by default; the account quotes **EUR only**, converted to KES/USD with `eurToDisplay` (rounds up, margin in basis points via `HOTEL_MARGIN_BPS` until the staff-editable global lands) |
+| Hotels | Hotelbeds APItude, server-side only (`src/lib/hotelbeds.ts`). Test host by default; the account quotes **EUR only**, converted to KES/USD with `eurToDisplay` (rounds up). Margin is the staff-editable `hotel-settings` global (env `HOTEL_MARGIN_BPS` is only the fallback until it's saved); lookups are cached in Postgres (`hotel-cache`) and every supplier request is counted (`hotel-calls`) |
 | Analytics | Plausible (preferred) or GA4 |
 | Validation | Zod, at the `POST /api/leads` trust boundary only — not for CMS-shaped data, which Payload already validates/types |
 | Package manager | pnpm |

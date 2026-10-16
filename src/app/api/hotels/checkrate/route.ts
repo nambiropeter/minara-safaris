@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { checkRate, getHotelbeds, HotelbedsError } from "@/lib/hotelbeds";
+import { recordHotelCall } from "@/lib/hotel-calls";
 import { describeCancellation, sellPrice } from "@/lib/hotel-pricing";
 import { guardSession, invalidRequest, sellContext } from "@/lib/hotel-request";
 
@@ -51,6 +52,8 @@ export async function POST(request: NextRequest) {
   if (ctx instanceof NextResponse) return ctx;
 
   try {
+    // Counted before the call: a CheckRate that fails still reached Hotelbeds.
+    await recordHotelCall("checkrate");
     const checked = await checkRate(config, rateKey);
     if (checked.currency !== "EUR") {
       console.error("hotelbeds returned a non-EUR price", { currency: checked.currency });

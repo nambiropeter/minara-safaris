@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { readCache, writeCache } from "./hotel-cache";
+import { recordHotelCall } from "./hotel-calls";
 import {
   getHotelRates,
   searchAvailability,
@@ -10,17 +12,12 @@ import {
 } from "./hotelbeds";
 
 /**
- * Identical lookups are served from cache, so look-to-book only counts distinct
- * ones. Hotelbeds does not cache for us: this is the protection.
- *
- * ponytail: in-memory per process, so it does NOT protect the ratio across
- * serverless instances. Fine against the test host; before a production key
- * exists, move this (and the call counters) to Postgres. Tracked as step 3.
+ * Identical lookups are served from the shared Postgres cache, so look-to-book only
+ * counts distinct ones. Hotelbeds does not cache for us: this is the protection, and
+ * it is shared across instances because the ratio is the account's, not an instance's.
+ * Every lookup that does reach Hotelbeds is recorded first (`hotel-calls`).
  */
 const TTL_MS = 20 * 60 * 1000;
-const MAX_ENTRIES = 500;
-
-const cache = new Map<string, { at: number; value: unknown }>();
 
 export function cacheKey(params: object): string {
   const normalised =
@@ -31,12 +28,12 @@ export function cacheKey(params: object): string {
 }
 
 async function cached<T>(key: string, now: number, load: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key);
-  if (hit && now - hit.at < TTL_MS) return hit.value as T;
+  const hit = await readCache<T>(key, now);
+  if (hit) return hit.value;
 
+  await recordHotelCall("availability");
   const value = await load();
-  if (cache.size >= MAX_ENTRIES) cache.delete(cache.keys().next().value as string);
-  cache.set(key, { at: now, value });
+  await writeCache(key, value, TTL_MS, now);
   return value;
 }
 

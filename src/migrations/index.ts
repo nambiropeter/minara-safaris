@@ -3,6 +3,7 @@ import * as migration_20260906_101839_orders_and_processed_events from './202609
 import * as migration_20260906_190200_query_presets from './20260906_190200_query_presets';
 import * as migration_20261016_093425_packages_accommodation from './20261016_093425_packages_accommodation';
 import * as migration_20261016_095411_destinations_hotel_destination from './20261016_095411_destinations_hotel_destination';
+import * as migration_20261016_161719_hotel_cache_calls_settings from './20261016_161719_hotel_cache_calls_settings';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261016_095411_destinations_hotel_destination.up,
     down: migration_20261016_095411_destinations_hotel_destination.down,
-    name: '20261016_095411_destinations_hotel_destination'
+    name: '20261016_095411_destinations_hotel_destination',
+  },
+  {
+    up: migration_20261016_161719_hotel_cache_calls_settings.up,
+    down: migration_20261016_161719_hotel_cache_calls_settings.down,
+    name: '20261016_161719_hotel_cache_calls_settings'
   },
 ];

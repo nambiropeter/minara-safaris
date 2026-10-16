@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   hotelRates: vi.fn(),
   getKesRates: vi.fn(),
+  settings: { current: { enabled: true, marginBps: 1500 } as { enabled: boolean; marginBps: number | null } },
   config: { current: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
 }));
 
 vi.mock("@/lib/hotelbeds", () => ({ getHotelbeds: () => h.config.current }));
 vi.mock("@/lib/hotel-search", () => ({ hotelRates: h.hotelRates }));
 vi.mock("@/lib/exchange-rates", () => ({ getKesRates: h.getKesRates }));
+vi.mock("@/lib/hotel-settings", () => ({ getHotelSettings: async () => h.settings.current }));
 
 import { issueSession, SESSION_COOKIE } from "@/lib/hotel-session";
 import { POST } from "./route";
@@ -29,7 +31,7 @@ function call(body: unknown, session: string | null = issueSession(Date.now() - 
 
 describe("POST /api/hotels/rates", () => {
   beforeEach(() => {
-    vi.stubEnv("HOTEL_MARGIN_BPS", "1500");
+    h.settings.current = { enabled: true, marginBps: 1500 };
     h.config.current = { apiKey: "k", secret: "s", baseUrl: "https://x" };
     h.hotelRates.mockReset();
     h.getKesRates.mockReset();

@@ -76,6 +76,8 @@ export interface Config {
     leads: Lead;
     orders: Order;
     'processed-events': ProcessedEvent;
+    'hotel-cache': HotelCache;
+    'hotel-calls': HotelCall;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -93,6 +95,8 @@ export interface Config {
     leads: LeadsSelect<false> | LeadsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     'processed-events': ProcessedEventsSelect<false> | ProcessedEventsSelect<true>;
+    'hotel-cache': HotelCacheSelect<false> | HotelCacheSelect<true>;
+    'hotel-calls': HotelCallsSelect<false> | HotelCallsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -103,8 +107,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'hotel-settings': HotelSetting;
+  };
+  globalsSelect: {
+    'hotel-settings': HotelSettingsSelect<false> | HotelSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -513,6 +521,38 @@ export interface ProcessedEvent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-cache".
+ */
+export interface HotelCache {
+  id: number;
+  key: string;
+  body:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  expiresAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Requests sent to Hotelbeds. Look-to-book is availability requests divided by bookings.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-calls".
+ */
+export interface HotelCall {
+  id: number;
+  kind: 'availability' | 'checkrate' | 'booking';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -570,6 +610,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'processed-events';
         value: number | ProcessedEvent;
+      } | null)
+    | ({
+        relationTo: 'hotel-cache';
+        value: number | HotelCache;
+      } | null)
+    | ({
+        relationTo: 'hotel-calls';
+        value: number | HotelCall;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -889,6 +937,26 @@ export interface ProcessedEventsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-cache_select".
+ */
+export interface HotelCacheSelect<T extends boolean = true> {
+  key?: T;
+  body?: T;
+  expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-calls_select".
+ */
+export interface HotelCallsSelect<T extends boolean = true> {
+  kind?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -963,6 +1031,34 @@ export interface PayloadQueryPresetsSelect<T extends boolean = true> {
   isTemp?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-settings".
+ */
+export interface HotelSetting {
+  id: number;
+  /**
+   * Untick to switch hotel search and booking off at once, without a deploy.
+   */
+  enabled?: boolean | null;
+  /**
+   * Added to Hotelbeds' price before it is shown or charged. 15 means 15%. Takes effect within a minute.
+   */
+  marginPercent: number;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotel-settings_select".
+ */
+export interface HotelSettingsSelect<T extends boolean = true> {
+  enabled?: T;
+  marginPercent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

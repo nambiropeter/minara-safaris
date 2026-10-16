@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getKesRates, type DisplayCurrency } from "./exchange-rates";
-import { marginBpsFromEnv, type SellContext } from "./hotel-pricing";
+import type { SellContext } from "./hotel-pricing";
+import { getHotelSettings } from "./hotel-settings";
 import { SESSION_COOKIE, verifySession } from "./hotel-session";
 import { allowRequest } from "./rate-limit";
 
@@ -38,13 +39,16 @@ export function stayNights(checkIn: string, checkOut: string): number | null {
  * no margin we'd sell at cost, with no rate we'd show a guessed price.
  */
 export async function sellContext(currency: DisplayCurrency): Promise<SellContext | NextResponse> {
-  let marginBps: number;
-  try {
-    marginBps = marginBpsFromEnv();
-  } catch (error) {
-    console.error("hotel margin not configured", error);
+  const settings = await getHotelSettings();
+  // Staff switched hotels off, or no margin exists anywhere: either way there is nothing safe to show.
+  if (!settings.enabled) {
     return NextResponse.json({ error: "Hotel search is not available." }, { status: 503 });
   }
+  if (settings.marginBps === null) {
+    console.error("hotel margin not configured: save one in Hotel settings or set HOTEL_MARGIN_BPS");
+    return NextResponse.json({ error: "Hotel search is not available." }, { status: 503 });
+  }
+  const marginBps = settings.marginBps;
   const rates = await getKesRates();
   if (!rates?.eurPerKes) {
     return NextResponse.json({ error: "Prices are temporarily unavailable." }, { status: 503 });

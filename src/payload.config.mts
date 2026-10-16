@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url'
 
 import { Articles } from './collections/Articles'
 import { Destinations } from './collections/Destinations'
+import { HotelCache } from './collections/HotelCache'
+import { HotelCalls } from './collections/HotelCalls'
 import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
 import { Orders } from './collections/Orders'
@@ -15,6 +17,7 @@ import { Packages } from './collections/Packages'
 import { Pages } from './collections/Pages'
 import { ProcessedEvents } from './collections/ProcessedEvents'
 import { Users } from './collections/Users'
+import { HotelSettings } from './globals/HotelSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -36,7 +39,8 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads, Orders, ProcessedEvents],
+  collections: [Users, Media, Destinations, Packages, Articles, Pages, Leads, Orders, ProcessedEvents, HotelCache, HotelCalls],
+  globals: [HotelSettings],
   editor: lexicalEditor(),
   secret: resolveSecret(),
   typescript: {
