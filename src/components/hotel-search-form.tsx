@@ -49,6 +49,9 @@ export function HotelSearchForm() {
     event.preventDefault();
     const query = stayParams({ checkIn, checkOut, adults, childAges });
     query.set("destination", destination);
+    // From a package page: carried along so the hotel can be booked together with it.
+    const pkg = params.get("package");
+    if (pkg) query.set("package", pkg);
     router.push(`/hotels/search?${query}`);
   }
 

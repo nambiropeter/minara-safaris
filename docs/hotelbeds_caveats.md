@@ -32,12 +32,14 @@ To run an end-to-end test: dev server on :3000, `stripe listen --forward-to loca
 |---|---|---|---|
 | 6 | **Pay and book is built** (`POST /api/hotels/book`, then the webhook books after `paid`). Unit-tested end to end with mocks; **never run for real**: it needs the schema applied (#7, #29) and a Stripe test payment typed by a person | verify | One real test-mode booking: pay, see `confirmed`, a Hotelbeds reference, then cancel via the admin refund |
 | 7 | **`supplier` group on `Orders`** (reference, rateKey, guests, net, margin, FX, cancellation fees, comments, outcome). Price facts freeze once paid; the outcome stays writable. Schema applied to the dev DB 2026-10-16 | verify | A paid hotel order edited in the admin to confirm the freeze |
+| 9a | **A double-clicked admin Refund writes its audit note twice** (the money is safe: one Stripe refund). Cosmetic | open | Disable the button after the first click, or skip the note when the idempotent retry returns the same refund |
 | 8 | **Auto-refund when Hotelbeds definitely refuses.** Refunds only a definite refusal. An *unknown* result (Hotelbeds answered a real cancellation with a 500 that had worked) refunds nothing, retries nothing and alerts staff to search Hotelbeds by order number. Unit-tested | verify | Seen live against a forced refusal |
 | 10 | **Margin is a staff-editable global** (`hotel-settings`: margin percent plus an on/off switch), remembered for a minute per instance. `HOTEL_MARGIN_BPS` stays as a bootstrap fallback until a margin is saved; with neither, search refuses to price. Unit-tested, not seen in the admin | verify | Margin saved in the admin and seen to change a price; then drop the env var |
 | 13 | **FX is snapshotted per order** (EUR and USD per KES, margin, EUR net) in the `supplier` group and frozen once paid | verify | Seen on a real order |
 | 14 | **Price-changed re-confirm** is unit-tested but never seen live (every sandbox rate re-checked at the same price) | verify | Seen in a browser with a rate that moves |
 | 15 | **`RECHECK` rates** are handled defensively and tested with mocks only. Every sandbox rate is `BOOKABLE` | verify | Observed against a real `RECHECK` rate |
 | 16 | **Only checked at desktop width**, and only in KES. Mobile layout and the USD switch are untested | verify | Checked on a phone-width viewport and with USD |
+| 12 | **Combined package + hotel checkout is built** (`/hotels?package=<id>` from a "choose your own hotel" package; one Stripe payment, two order items; a refused hotel refunds only its own subtotal and the package stays `paid`; admin refund of a bundle cancels the hotel, then refunds what Stripe still holds). **Unit-tested only** (pricing, partial refund, book route, admin refund). The webhook's bundle branch and the UI have never run for real. Per-item admin refund is not built: staff refund one item by hand in Stripe | verify | A real bundle paid and booked (order stays `paid`, hotel `booked`); a forced refusal on a bundle giving a partial refund; the booking page and emails read in a browser |
 | 30 | **The booking runs inside the Stripe webhook request**, about 1.6s on the sandbox. If Hotelbeds is slow Stripe may time out and redeliver; that is safe (the event is already claimed and the order already `paid`) but the booking outcome is still recorded by the first run | verify | Hotelbeds latency seen across several bookings; `after()` if it matters |
 
 ## 3. PRE-PRODUCTION only
@@ -69,16 +71,15 @@ The checklist form is in `docs/PRE-PROD.md` under **Hotelbeds**.
 |---|---|---|---|
 | 9 | **Admin refund cancels the Hotelbeds booking first**, inside the free-cancellation window only. Where fees apply it refuses and staff settle it by hand in Stripe (no partial-refund arithmetic, deliberately) | decision | Partial refunds are wanted often enough to build |
 | 11 | **No health endpoints.** Built, then removed: Vercel doesn't need them and nothing probes them | decision | A host that needs liveness/readiness probes |
-| 12 | **Combined package + hotel checkout is not built.** Decision: prove standalone hotel booking live first. It adds a second money path with its own partial-failure rules (see "Why not yet" below) | decision | Standalone proven live; then the rules below decided |
 | 17 | **Price shifts can be exchange-rate drift.** `priceChanged` compares with what the visitor saw, so a daily FX refresh can flag a change the supplier didn't make | verify | Decide whether to tolerate small FX moves |
 | 21 | **Hotel areas are a database enum.** Adding a place means a code change in `hotel-destinations.ts` plus a one-line migration | decision | Accept it, or switch the field to plain text |
 | 23 | **Sandbox prices can be extreme** (a 3-night B&B at KES 3.3 million against KES 44,000 for the cheapest in the same room type). Matches the sandbox's own €22,217 maximum | dev-only | Not an issue on live data; re-check |
 | 24 | **`images.dangerouslyAllowLocalIP` is on in development.** NAT64 dev networks resolve `photos.hotelbeds.com` to `64:ff9b::` addresses that Next's SSRF guard blocks. Production keeps the guard | dev-only | Remove if the dev network changes |
 | 25 | **Gallery uses Hotelbeds' photo order**, which can include odd shots (a knife block on one hotel) | open | Prefer exterior/room image types, or cap the count |
 
-### #12: the design, as decided (2026-10-16)
+### #12: the design, as decided (2026-10-16), built 2026-10-17
 
-Not started until the standalone booking was proven live (it now is). The decisions, from Leo:
+The decisions, from Leo:
 
 - **One checkout and one payment for a package and a hotel**, but kept separate *on paper*: the order carries
   two items, and each can still be bought alone (hotel only, package only, or ask an agent).
@@ -87,7 +88,7 @@ Not started until the standalone booking was proven live (it now is). The decisi
 - Standalone paths stay, because some rates are non-refundable and some customers will want a hotel alone
   or to deal with an agent.
 
-What that means to build: a partial-refund path (today's refund helper and admin button are full-only); the
+What that meant to build (all done, see row 12): a partial-refund path (today's refund helper and admin button are full-only); the
 webhook must set `confirmed` automatically **only for hotel-only orders** (in a bundle the package still needs
 staff confirmation, so the order stays `paid` and `supplier.status` carries the hotel); the admin refund needs
 to know which item it is refunding; `/hotels?package=<id>` as the entry from a package page.
@@ -102,7 +103,7 @@ to know which item it is refunding; `/hotels?package=<id>` as the entry from a p
 
 ## Closed
 
-- **First real end-to-end booking** (2026-10-16, dev server, Stripe sandbox, Hotelbeds test host). The Boma Nairobi, Superior room, room only, 10 to 13 Feb 2027, KES 48,862. Webhook answered 200 on every event; the order went `pending` to `confirmed` by itself with Hotelbeds reference `286-2159018`, our order number as `clientReference`, booked net equal to quoted net (EUR 292.14), the fee schedule stored, and the supplier "payable through" entity recorded (`HOTELBEDS DMCC`, it differs per booking). **Not yet covered:** the admin refund cancelling the booking first, a forced refusal, an unknown outcome, the booking page's hotel block, emails.
+- **First real end-to-end booking** (2026-10-16, dev server, Stripe sandbox, Hotelbeds test host). The Boma Nairobi, Superior room, room only, 10 to 13 Feb 2027, KES 48,862. Webhook answered 200 on every event; the order went `pending` to `confirmed` by itself with Hotelbeds reference `286-2159018`, our order number as `clientReference`, booked net equal to quoted net (EUR 292.14), the fee schedule stored, and the supplier "payable through" entity recorded (`HOTELBEDS DMCC`, it differs per booking). **Admin refund proven live 2026-10-17** on that order: Hotelbeds booking `CANCELLED` first (supplier status `cancelled`, `totalNet` 0 read back from `GET /bookings/286-2159018`), one full Stripe refund (KES 48,862.00; a second click did not refund twice, the idempotency key held, though it wrote the audit note twice), then `charge.refunded` moved the order to `refunded`. That event was missed the first time because `stripe listen` was not running when the refund was made; a resend delivered it. **Not yet covered:** a forced refusal, an unknown outcome, the booking page's hotel block, emails, mobile width and USD (#16).
 - **"From" price on the results list was wrong for 30% of hotels** (found 2026-10-16 by measuring the sandbox): it used Hotelbeds' hotel-level minimum, which includes packaging rates we don't sell, so 12 of 40 hotels advertised a price 6-17% below anything we could offer. Now computed from sellable rates only, and a hotel with nothing sellable isn't listed. Unit-tested, and **verified live 2026-10-17**: 8 Nairobi hotels checked against their own rooms-and-rates pages, 0 mismatches (calls paced 1.5s apart).
 
 - **#20: `pnpm seed:hotels` run** (2026-10-16). Created 7 photos, 4 destinations, 6 packages and mapped the 4 existing destinations. Verified against the database afterwards: orders, leads, articles and users unchanged. The uploaded files are committed under `media/` (`a36330b`).

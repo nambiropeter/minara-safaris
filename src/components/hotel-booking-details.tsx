@@ -1,5 +1,6 @@
 import { cancellationLines, formatHotelDate, nightsLabel, storedCancellation } from "@/lib/hotel-format";
-import type { Currency } from "@/lib/money";
+import { formatMoney, type Currency } from "@/lib/money";
+import { orderParts } from "@/lib/order-parts";
 import type { Order } from "@/payload-types";
 
 /** What is true about the hotel, in words a customer can rely on. Never reveals more than we know. */
@@ -23,6 +24,12 @@ export function HotelBookingDetails({ order }: { order: Order }) {
   if (!supplier || supplier.name !== "hotelbeds") return null;
 
   const currency = order.currency as Currency;
+  const { bundle, hotelSubtotal } = orderParts(order);
+  // In a bundle only the hotel's part is refunded; the package stands.
+  const statusLine =
+    supplier.status === "failed" && bundle
+      ? `The hotel could not be booked, so ${formatMoney(hotelSubtotal, currency)} has been refunded. Your package is not affected.`
+      : supplier.status && STATUS_LINE[supplier.status];
   const policies = (supplier.cancellationPolicies ?? []).map((p) => ({ from: p.from, amount: p.amount }));
   const cancellation = storedCancellation(policies);
 
@@ -39,7 +46,7 @@ export function HotelBookingDetails({ order }: { order: Order }) {
       <h2 id="hotel-heading" className="text-heading">
         Your hotel
       </h2>
-      {supplier.status && <p className="mt-2 text-muted-foreground">{STATUS_LINE[supplier.status]}</p>}
+      {statusLine && <p className="mt-2 text-muted-foreground">{statusLine}</p>}
 
       <dl className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-[auto_1fr]">
         {supplier.hotelName && <Row label="Hotel" value={supplier.hotelName} />}
@@ -59,7 +66,7 @@ export function HotelBookingDetails({ order }: { order: Order }) {
         <div className="mt-6">
           <h3 className="text-label font-medium">Cancellation</h3>
           <ul className="mt-1 text-sm text-muted-foreground">
-            {cancellationLines(cancellation, currency, order.amountTotal).map((line) => (
+            {cancellationLines(cancellation, currency, hotelSubtotal || order.amountTotal).map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>

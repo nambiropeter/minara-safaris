@@ -165,7 +165,7 @@ export default async function PackageDetailPage({ params }: RouteProps) {
                 budget and dates.
               </p>
               <Button
-                render={<Link href={hotelSlug ? `/hotels?destination=${hotelSlug}` : "/hotels"} />}
+                render={<Link href={`/hotels?${new URLSearchParams({ ...(hotelSlug && { destination: hotelSlug }), package: String(pkg.id) })}`} />}
                 size="cta"
                 className="mt-4"
               >

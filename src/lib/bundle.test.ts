@@ -15,13 +15,14 @@ const payloadWith = (docs: unknown[]) => ({ find: vi.fn().mockResolvedValue({ do
 
 describe("priceBundlePackage", () => {
   it("prices per person from the catalogue, times the party", async () => {
-    const line = await priceBundlePackage(payloadWith([doc()]), "5", "KES", 3, rates);
-    expect(line).toMatchObject({ kind: "package", refId: "5", unitAmount: 6000000, quantity: 3, subtotal: 18000000 });
+    const line = await priceBundlePackage(payloadWith([doc({ priceNote: "per person sharing" })]), "5", "KES", 3, rates);
+    expect(line?.priceNote).toBe("per person sharing");
+    expect(line?.item).toMatchObject({ kind: "package", refId: "5", unitAmount: 6000000, quantity: 3, subtotal: 18000000 });
   });
 
   it("converts with the shared convertPrice when the visitor chose USD", async () => {
     const line = await priceBundlePackage(payloadWith([doc()]), "5", "USD", 2, rates);
-    expect(line?.unitAmount).toBe(46200); // floor(60000 * 0.0077) = 462.00 USD
+    expect(line?.item.unitAmount).toBe(46200); // floor(60000 * 0.0077) = 462.00 USD
   });
 
   it("returns null for a package that is unpublished or unknown", async () => {

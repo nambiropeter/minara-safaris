@@ -80,6 +80,8 @@ export function HotelResults() {
 
   const detailQuery = stayParams(stay);
   detailQuery.set("destination", destination.slug);
+  const pkg = params.get("package");
+  if (pkg) detailQuery.set("package", pkg);
   const sorted = [...hotels].sort((a, b) => a.from - b.from);
 
   return (

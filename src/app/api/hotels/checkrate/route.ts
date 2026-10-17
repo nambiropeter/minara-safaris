@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         previousFrom: shownFrom,
         priceChanged: from !== shownFrom,
         cancellation: describeCancellation(checked.rate.cancellationPolicies, ctx),
-        package: bundled && { title: bundled.title, unitAmount: bundled.unitAmount, quantity: bundled.quantity, subtotal: bundled.subtotal },
+        package: bundled && { ...bundled.item, priceNote: bundled.priceNote },
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

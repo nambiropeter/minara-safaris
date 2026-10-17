@@ -19,6 +19,8 @@ type Props = {
   adults: number;
   childAges: number[];
   hotelName: string;
+  /** Set when booking with a package: its id and the subtotal the visitor was shown. */
+  bundle?: { id: string; subtotal: number };
 };
 
 /**
@@ -28,7 +30,7 @@ type Props = {
  * the rate and refuses to proceed if its figure differs. When that happens the visitor
  * sees both numbers and must accept the new one before anything is submitted again.
  */
-export function HotelBookingForm({ rateKey, from, currency, adults, childAges, hotelName }: Props) {
+export function HotelBookingForm({ rateKey, from, currency, adults, childAges, hotelName, bundle }: Props) {
   const [agreed, setAgreed] = useState(from);
   const [changedTo, setChangedTo] = useState<number | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
@@ -54,6 +56,7 @@ export function HotelBookingForm({ rateKey, from, currency, adults, childAges, h
       guests: guests.map((_, i) => ({ firstName: form.get(`first-${i}`), lastName: form.get(`last-${i}`) })),
       customerEmail: form.get("email"),
       customerPhone: form.get("phone") || undefined,
+      ...(bundle && { package: { id: bundle.id, shownSubtotal: bundle.subtotal } }),
     });
 
     if (result.ok && result.data.url) {
@@ -130,7 +133,7 @@ export function HotelBookingForm({ rateKey, from, currency, adults, childAges, h
       )}
 
       <Button type="submit" size="cta" className="w-full sm:w-fit" disabled={status === "submitting" || changedTo !== null}>
-        {status === "submitting" ? "Redirecting…" : `Pay ${formatHotelMoney(agreed, currency)} securely`}
+        {status === "submitting" ? "Redirecting…" : `Pay ${formatHotelMoney(agreed + (bundle?.subtotal ?? 0), currency)} securely`}
       </Button>
       <p className="-mt-2 text-label text-muted-foreground">You will pay with Stripe. Nothing is charged until you confirm there.</p>
     </form>

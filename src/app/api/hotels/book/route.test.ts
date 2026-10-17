@@ -272,7 +272,7 @@ describe("POST /api/hotels/book: with a package", () => {
   const bundled = { ...valid, package: { id: "5", shownSubtotal: 18_000_000 } };
 
   it("charges package and hotel as two items on one session, the party size taken from the rate", async () => {
-    h.priceBundlePackage.mockResolvedValue(pkgLine);
+    h.priceBundlePackage.mockResolvedValue({ item: pkgLine, priceNote: null });
     const res = await call(bundled);
     expect(res.status).toBe(200);
     expect(h.priceBundlePackage).toHaveBeenCalledWith(expect.anything(), "5", "KES", 3, expect.anything());
@@ -293,7 +293,7 @@ describe("POST /api/hotels/book: with a package", () => {
   });
 
   it("refuses when the package price moved since the visitor saw it", async () => {
-    h.priceBundlePackage.mockResolvedValue({ ...pkgLine, subtotal: 19_000_000 });
+    h.priceBundlePackage.mockResolvedValue({ item: { ...pkgLine, subtotal: 19_000_000 }, priceNote: null });
     expect((await call(bundled)).status).toBe(409);
     expect(h.startCheckout).not.toHaveBeenCalled();
   });

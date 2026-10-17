@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
   if (data.package) {
     packageLine = await priceBundlePackage(payload, data.package.id, ctx.currency, data.adults + data.childAges.length, ctx.rates);
     if (!packageLine) return invalidRequest();
-    if (packageLine.subtotal !== data.package.shownSubtotal) {
+    if (packageLine.item.subtotal !== data.package.shownSubtotal) {
       return NextResponse.json({ error: "The package price has changed. Please reload the page and try again." }, { status: 409 });
     }
   }
   const priced = addHotel(
-    { items: packageLine ? [packageLine] : [], currency: ctx.currency, amountTotal: packageLine?.subtotal ?? 0 },
+    { items: packageLine ? [packageLine.item] : [], currency: ctx.currency, amountTotal: packageLine?.item.subtotal ?? 0 },
     { refId: String(checked.hotelCode), title, amount: from, currency: ctx.currency },
   );
   const started = await startCheckout({

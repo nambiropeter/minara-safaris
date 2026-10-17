@@ -33,6 +33,7 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
   const params = useSearchParams();
   const stay = useMemo(() => parseStay(params), [params]);
   const currency = useCurrencyPreference() ?? "KES";
+  const packageId = params.get("package");
 
   const key = `${hotelCode}|${params.toString()}|${currency}`;
   const [answer, setAnswer] = useState<{ key: string; result: HotelApiResult<RatesResponse> } | null>(null);
@@ -70,6 +71,7 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
       rateKey: rate.rateKey,
       shownFrom: rate.from,
       currency,
+      ...(packageId && { packageId }),
     });
     setChecking(false);
 
@@ -141,6 +143,25 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
           {confirmed.board.name.toLowerCase()} · {formatHotelDate(stay.checkIn)} to {formatHotelDate(stay.checkOut)} · {guests}
         </p>
         <HotelPrice amount={confirmed.from} currency={currency} nights={nights} size="detail" className="mt-4" />
+        {confirmed.package && (
+          <dl className="mt-4 grid gap-2 rounded-lg border border-border p-4 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt>
+                {confirmed.package.title}, {confirmed.package.quantity} {confirmed.package.quantity === 1 ? "traveller" : "travellers"}
+                <span className="block text-label text-muted-foreground">{confirmed.package.priceNote}</span>
+              </dt>
+              <dd>{formatHotelMoney(confirmed.package.subtotal, currency)}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt>This hotel</dt>
+              <dd>{formatHotelMoney(confirmed.from, currency)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-t border-border pt-2 font-semibold">
+              <dt>Total</dt>
+              <dd>{formatHotelMoney(confirmed.from + confirmed.package.subtotal, currency)}</dd>
+            </div>
+          </dl>
+        )}
         <ul className="mt-3 text-sm text-muted-foreground">
           {cancellationLines(confirmed.cancellation, currency, confirmed.from).map((line) => (
             <li key={line}>{line}</li>
@@ -177,6 +198,7 @@ export function HotelRates({ hotelCode, hotelName }: { hotelCode: number; hotelN
             adults={stay.adults}
             childAges={stay.childAges}
             hotelName={hotelName}
+            bundle={confirmed.package && packageId ? { id: packageId, subtotal: confirmed.package.subtotal } : undefined}
           />
         )}
       </div>

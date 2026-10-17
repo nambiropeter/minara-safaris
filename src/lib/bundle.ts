@@ -7,7 +7,7 @@ import { priceOrder, type PricedItem } from "./pricing";
  * The package half of a package-plus-hotel order, priced from the catalogue exactly as
  * POST /api/checkout does (same `convertPrice`), so the figure shown with the hotel is the
  * figure charged. Null when the package can't take a hotel: unknown, unpublished, or lodging
- * already included. The package is priced per person, for the whole hotel party.
+ * already included. `priceNote` travels with it because a package price is never shown bare. The package is priced per person, for the whole hotel party.
  */
 export async function priceBundlePackage(
   payload: Payload,
@@ -15,7 +15,7 @@ export async function priceBundlePackage(
   currency: DisplayCurrency,
   quantity: number,
   rates: { usdPerKes: number },
-): Promise<PricedItem | null> {
+): Promise<{ item: PricedItem; priceNote: string | null } | null> {
   const found = await payload.find({
     collection: "packages",
     where: { id: { equals: packageId }, isPublished: { equals: true } },
@@ -32,5 +32,5 @@ export async function priceBundlePackage(
     priceFrom: convertPrice(pkg.priceFrom, native, currency, rates.usdPerKes),
     currency,
   }));
-  return priced.items[0];
+  return { item: priced.items[0], priceNote: pkg.priceNote ?? null };
 }

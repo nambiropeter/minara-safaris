@@ -84,6 +84,8 @@ export type CheckrateResponse = {
   previousFrom: number;
   priceChanged: boolean;
   cancellation: Cancellation;
+  /** The package this stay is being booked with, priced by the server for the whole party. Absent for a hotel-only booking. */
+  package?: { title: string; unitAmount: number; quantity: number; subtotal: number; priceNote: string | null } | null;
 };
 
 /** Query-string form of a stay, shared by the form, results and detail links. */
