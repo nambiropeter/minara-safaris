@@ -30,8 +30,24 @@ export class HotelbedsError extends Error {
     readonly status: number,
     detail: string,
   ) {
-    super(`Hotelbeds ${status}: ${detail.slice(0, 300)}`);
+    super(`Hotelbeds ${status}: ${errorSummary(detail).slice(0, 300)}`);
   }
+}
+
+/**
+ * Hotelbeds buries the cause after a long `auditData` block, so a plain cut-off kept the noise
+ * and lost the code (seen live 2026-10-17: a refusal reason that said nothing). Prefer its
+ * `error.code` and `error.message` when the body has them.
+ */
+function errorSummary(detail: string): string {
+  try {
+    const error = JSON.parse(detail)?.error;
+    const summary = [error?.code, error?.message].filter((part) => typeof part === "string" && part).join(": ");
+    if (summary) return summary;
+  } catch {
+    // not JSON: fall through to the raw text
+  }
+  return detail;
 }
 
 async function call<T>(config: HotelbedsConfig, method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {

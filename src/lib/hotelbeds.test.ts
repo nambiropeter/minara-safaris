@@ -470,3 +470,15 @@ describe("searchAvailability", () => {
     expect(error.message).not.toContain("shh");
   });
 });
+
+describe("HotelbedsError", () => {
+  it("leads with the error code and message, not the audit block that precedes them", () => {
+    const body = JSON.stringify({ auditData: { token: "x".repeat(400) }, error: { code: "SYSTEM_ERROR", message: "Internal problem" } });
+    expect(new HotelbedsError(500, body).message).toBe("Hotelbeds 500: SYSTEM_ERROR: Internal problem");
+  });
+
+  it("keeps the raw text when the body is not Hotelbeds JSON", () => {
+    expect(new HotelbedsError(502, "Bad gateway").message).toBe("Hotelbeds 502: Bad gateway");
+  });
+});
+
