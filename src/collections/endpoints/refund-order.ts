@@ -2,7 +2,8 @@ import type { PayloadHandler } from "payload";
 
 import { cancelBooking, getHotelbeds } from "../../lib/hotelbeds.ts";
 import { formatMoney, type Currency } from "../../lib/money.ts";
-import { refundPayment } from "../../lib/refund.ts";
+import { orderParts } from "../../lib/order-parts.ts";
+import { refundableAmount, refundPayment } from "../../lib/refund.ts";
 import { getStripe } from "../../lib/stripe.ts";
 
 /**
@@ -13,7 +14,10 @@ import { getStripe } from "../../lib/stripe.ts";
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 /**
- * Refunds a paid order in full.
+ * Refunds a paid order in full. For a package-plus-hotel bundle that means everything still
+ * refundable: the hotel's part may already have gone back automatically (Hotelbeds refused
+ * it), so the amount is read from Stripe. Refunding one item of a bundle is not built; staff
+ * do that by hand in Stripe.
  *
  * This only *asks Stripe*. It deliberately does not mark the order refunded:
  * the signature-verified `charge.refunded` webhook is the single writer of that
@@ -92,9 +96,21 @@ export const refundOrder: PayloadHandler = async (req) => {
     }
   }
 
+  let amount: number | undefined;
+  if (orderParts(order).bundle) {
+    try {
+      amount = await refundableAmount(stripe, paymentIntent);
+    } catch (error) {
+      console.error("could not read the refundable amount", error, { orderId: order.id });
+      return json({ error: "Could not read this payment from Stripe. Nothing was refunded." }, 502);
+    }
+    if (amount <= 0) return json({ error: "Stripe says this payment is already refunded." }, 409);
+  }
+
   const refund = await refundPayment(stripe, {
     paymentIntentId: paymentIntent,
     orderId: order.id,
+    amount,
     idempotencyKey: `refund-order-${order.id}`,
     requestedBy: req.user.email,
   });
@@ -107,12 +123,12 @@ export const refundOrder: PayloadHandler = async (req) => {
   // Audit trail: who asked. The money has moved by now, so a failure to write
   // the note must not turn this into an error.
   try {
-    const amount = formatMoney(order.amountTotal, order.currency as Currency);
+    const refunded = formatMoney(amount ?? order.amountTotal, order.currency as Currency);
     await req.payload.update({
       collection: "orders",
       id: order.id,
       data: {
-        staffNotes: `${order.staffNotes ?? ""}\nRefund of ${amount} requested by ${req.user.email}.`.trim(),
+        staffNotes: `${order.staffNotes ?? ""}\nRefund of ${refunded} requested by ${req.user.email}.`.trim(),
       },
     });
   } catch (error) {

@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getPayload } from "payload";
 import { z } from "zod";
 
+import configPromise from "@payload-config";
+import { priceBundlePackage } from "@/lib/bundle";
 import { checkRate, getHotelbeds, HotelbedsError } from "@/lib/hotelbeds";
 import { describeCancellation, sellPrice } from "@/lib/hotel-pricing";
 import { guardSession, invalidRequest, sellContext } from "@/lib/hotel-request";
@@ -18,6 +21,8 @@ const checkrateSchema = z.strictObject({
   rateKey: z.string().min(1).max(1000),
   shownFrom: z.number().int().min(0),
   currency: z.enum(["KES", "USD"]).default("KES"),
+  /** Set when the visitor arrived from a package: the response then carries its price for the same party. */
+  packageId: z.string().trim().min(1).max(64).optional(),
 });
 
 /** Hotelbeds answers 4xx when a rate has expired or sold out; that's the customer's problem to retry, not ours. */
@@ -45,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
   const parsed = checkrateSchema.safeParse(body);
   if (!parsed.success) return invalidRequest();
-  const { rateKey, shownFrom, currency } = parsed.data;
+  const { rateKey, shownFrom, currency, packageId } = parsed.data;
 
   const ctx = await sellContext(currency);
   if (ctx instanceof NextResponse) return ctx;
@@ -62,6 +67,10 @@ export async function POST(request: NextRequest) {
     }
 
     const from = sellPrice(checked.rate.net, ctx);
+    // Null when the package is unknown or includes lodging: the page then falls back to a hotel-only booking.
+    const bundled = packageId
+      ? await priceBundlePackage(await getPayload({ config: configPromise }), packageId, ctx.currency, checked.adults + checked.children, ctx.rates)
+      : null;
     return NextResponse.json(
       {
         // Booking must use this key, not the one the browser sent: Hotelbeds may reissue it.
@@ -72,6 +81,7 @@ export async function POST(request: NextRequest) {
         previousFrom: shownFrom,
         priceChanged: from !== shownFrom,
         cancellation: describeCancellation(checked.rate.cancellationPolicies, ctx),
+        package: bundled && { title: bundled.title, unitAmount: bundled.unitAmount, quantity: bundled.quantity, subtotal: bundled.subtotal },
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

@@ -5,6 +5,7 @@ const h = vi.hoisted(() => ({
   checkRate: vi.fn(),
   getKesRates: vi.fn(),
   startCheckout: vi.fn(),
+  priceBundlePackage: vi.fn(),
   settings: { current: { enabled: true, marginBps: 1500 } as { enabled: boolean; marginBps: number | null } },
   config: { current: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
   stripe: { current: {} as unknown },
@@ -19,6 +20,7 @@ vi.mock("@/lib/hotelbeds", async () => ({
 }));
 vi.mock("@/lib/exchange-rates", () => ({ getKesRates: h.getKesRates }));
 vi.mock("@/lib/hotel-settings", () => ({ getHotelSettings: async () => h.settings.current }));
+vi.mock("@/lib/bundle", () => ({ priceBundlePackage: h.priceBundlePackage }));
 vi.mock("@/lib/start-checkout", () => ({ startCheckout: h.startCheckout }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => h.stripe.current }));
 
@@ -81,6 +83,7 @@ function call(body: unknown, session: string | null = issueSession(Date.now() - 
 beforeEach(() => {
   h.checkRate.mockReset();
   h.startCheckout.mockReset();
+  h.priceBundlePackage.mockReset();
   h.getKesRates.mockReset();
   h.settings.current = { enabled: true, marginBps: 1500 };
   h.config.current = { apiKey: "k", secret: "s", baseUrl: "https://x" };
@@ -261,5 +264,45 @@ describe("POST /api/hotels/book: what the rate must be", () => {
   it("reports a payment that could not be started", async () => {
     h.startCheckout.mockResolvedValue({ ok: false });
     expect((await call(valid)).status).toBe(502);
+  });
+});
+
+describe("POST /api/hotels/book: with a package", () => {
+  const pkgLine = { kind: "package", refId: "5", title: "Mara 3 days", unitAmount: 6_000_000, quantity: 3, subtotal: 18_000_000 };
+  const bundled = { ...valid, package: { id: "5", shownSubtotal: 18_000_000 } };
+
+  it("charges package and hotel as two items on one session, the party size taken from the rate", async () => {
+    h.priceBundlePackage.mockResolvedValue(pkgLine);
+    const res = await call(bundled);
+    expect(res.status).toBe(200);
+    expect(h.priceBundlePackage).toHaveBeenCalledWith(expect.anything(), "5", "KES", 3, expect.anything());
+
+    const args = h.startCheckout.mock.calls[0][0];
+    expect(args.order.items.map((i: { kind: string }) => i.kind)).toEqual(["package", "hotel"]);
+    expect(args.order.amountTotal).toBe(18_000_000 + 1_725_000);
+    expect(args.lineItems.map((l: { price_data: { unit_amount: number }; quantity: number }) => l.price_data.unit_amount * l.quantity)).toEqual([
+      18_000_000,
+      1_725_000,
+    ]);
+  });
+
+  it("rejects a package that can't take a hotel, before anything is created", async () => {
+    h.priceBundlePackage.mockResolvedValue(null);
+    expect((await call(bundled)).status).toBe(400);
+    expect(h.startCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the package price moved since the visitor saw it", async () => {
+    h.priceBundlePackage.mockResolvedValue({ ...pkgLine, subtotal: 19_000_000 });
+    expect((await call(bundled)).status).toBe(409);
+    expect(h.startCheckout).not.toHaveBeenCalled();
+  });
+
+  it("a hotel-only booking is unchanged: one item, the hotel's price", async () => {
+    await call(valid);
+    const args = h.startCheckout.mock.calls[0][0];
+    expect(args.order.items).toHaveLength(1);
+    expect(args.order.amountTotal).toBe(1_725_000);
+    expect(h.priceBundlePackage).not.toHaveBeenCalled();
   });
 });

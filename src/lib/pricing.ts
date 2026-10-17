@@ -14,7 +14,7 @@ export type OrderItemInput = {
 };
 
 export type PricedItem = {
-  kind: "package";
+  kind: "package" | "hotel";
   refId: string;
   title: string;
   unitAmount: number;
@@ -70,4 +70,24 @@ export function priceOrder(
     currency: currency as Currency,
     amountTotal: priced.reduce((sum, i) => sum + i.subtotal, 0),
   };
+}
+
+/**
+ * Adds an already server-priced hotel to a priced package, as its own item so the two
+ * stay separable on the order (a refused hotel refunds only its own subtotal).
+ */
+export function addHotel(
+  priced: ReturnType<typeof priceOrder>,
+  hotel: { refId: string; title: string; amount: number; currency: Currency },
+): ReturnType<typeof priceOrder> {
+  if (hotel.currency !== priced.currency) throw new Error("An order must use a single currency.");
+  const item: PricedItem = {
+    kind: "hotel",
+    refId: hotel.refId,
+    title: hotel.title,
+    unitAmount: hotel.amount,
+    quantity: 1,
+    subtotal: hotel.amount,
+  };
+  return { ...priced, items: [...priced.items, item], amountTotal: priced.amountTotal + hotel.amount };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { priceOrder, type PriceablePackage } from "@/lib/pricing";
+import { addHotel, priceOrder, type PriceablePackage } from "@/lib/pricing";
 
 const CATALOGUE: Record<string, PriceablePackage> = {
   "1": { id: 1, title: "7-day Masai Mara", priceFrom: 1250, currency: "USD" },
@@ -56,5 +56,23 @@ describe("priceOrder", () => {
     expect(() =>
       priceOrder([{ kind: "package", refId: "1", quantity: 0 }], lookup),
     ).toThrow(/quantity/);
+  });
+});
+
+describe("addHotel", () => {
+  const hotel = { refId: "42", title: "The Boma, Superior, room only, 3 nights", amount: 4886200, currency: "KES" as const };
+
+  it("appends the hotel as its own item and totals both", () => {
+    const pkg = priceOrder([{ kind: "package", refId: "3", quantity: 2 }], lookup);
+    const bundle = addHotel(pkg, hotel);
+    expect(bundle.items.map((i) => i.kind)).toEqual(["package", "hotel"]);
+    expect(bundle.items[1]).toMatchObject({ unitAmount: 4886200, quantity: 1, subtotal: 4886200 });
+    expect(bundle.amountTotal).toBe(2 * 950000 + 4886200);
+    expect(pkg.items).toHaveLength(1); // the input is not mutated
+  });
+
+  it("refuses a hotel in a different currency than the package", () => {
+    const pkg = priceOrder([{ kind: "package", refId: "1", quantity: 1 }], lookup);
+    expect(() => addHotel(pkg, hotel)).toThrow(/single currency/);
   });
 });

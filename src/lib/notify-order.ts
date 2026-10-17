@@ -2,6 +2,7 @@ import { Resend } from "resend";
 
 import type { Order } from "@/payload-types";
 import { formatMoney, type Currency } from "./money";
+import { orderParts } from "./order-parts";
 
 /**
  * Booking confirmation email with a link to the private booking page, and the
@@ -60,7 +61,9 @@ export async function notifyHotelRefused(order: Order): Promise<void> {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!apiKey || !from) return;
 
-  const total = formatMoney(order.amountTotal, order.currency as Currency);
+  // In a bundle the package stands; only the hotel's part goes back.
+  const { bundle, hotelSubtotal } = orderParts(order);
+  const refunded = formatMoney(bundle ? hotelSubtotal : order.amountTotal, order.currency as Currency);
   await new Resend(apiKey).emails.send({
     from,
     to: order.customerEmail,
@@ -68,7 +71,9 @@ export async function notifyHotelRefused(order: Order): Promise<void> {
     text: [
       `We are sorry: the hotel could not confirm your booking, so nothing has been booked.`,
       ``,
-      `We have refunded your payment of ${total} in full. It can take 5 to 10 working days to appear on your statement.`,
+      bundle
+        ? `We have refunded the hotel part of your payment, ${refunded}. Your package is unaffected and we will be in touch to confirm it. The refund can take 5 to 10 working days to appear on your statement.`
+        : `We have refunded your payment of ${refunded} in full. It can take 5 to 10 working days to appear on your statement.`,
       ``,
       `Booking reference: ${order.orderNumber}`,
       ``,

@@ -3,10 +3,12 @@ import { getPayload } from "payload";
 import { z } from "zod";
 
 import configPromise from "@payload-config";
+import { priceBundlePackage } from "@/lib/bundle";
 import { checkRate, getHotelbeds, HotelbedsError } from "@/lib/hotelbeds";
 import { nightsLabel } from "@/lib/hotel-format";
 import { describeCancellation, sellPrice } from "@/lib/hotel-pricing";
 import { guardSession, invalidRequest, sellContext, stayFields } from "@/lib/hotel-request";
+import { addHotel } from "@/lib/pricing";
 import { startCheckout } from "@/lib/start-checkout";
 import { getStripe } from "@/lib/stripe";
 
@@ -22,6 +24,9 @@ const name = z.string().trim().min(1).max(50).regex(/^[\p{L}\p{M}' .-]+$/u);
  * dates either: the rateKey encodes the stay, so the dates come from CheckRate, not from
  * a browser that could claim different ones.
  *
+ * With `package`, the order carries the package too, priced here from the catalogue for the
+ * whole party; as with the hotel, the browser's figure is only compared, never charged.
+ *
  * `guests` is adults first, then children in the order of `childAges`. The first guest
  * is the booking holder.
  */
@@ -34,6 +39,8 @@ const bookSchema = z.strictObject({
   guests: z.array(z.strictObject({ firstName: name, lastName: name })).min(1).max(14),
   customerEmail: z.email().trim(),
   customerPhone: z.string().trim().max(50).optional(),
+  /** Optional: bundle with a "choose your own hotel" package. The subtotal is only what the visitor saw. */
+  package: z.strictObject({ id: z.string().trim().min(1).max(64), shownSubtotal: z.number().int().min(0) }).optional(),
 });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -107,6 +114,19 @@ export async function POST(request: NextRequest) {
   const holder = data.guests[0];
 
   const payload = await getPayload({ config: configPromise });
+
+  let packageLine = null;
+  if (data.package) {
+    packageLine = await priceBundlePackage(payload, data.package.id, ctx.currency, data.adults + data.childAges.length, ctx.rates);
+    if (!packageLine) return invalidRequest();
+    if (packageLine.subtotal !== data.package.shownSubtotal) {
+      return NextResponse.json({ error: "The package price has changed. Please reload the page and try again." }, { status: 409 });
+    }
+  }
+  const priced = addHotel(
+    { items: packageLine ? [packageLine] : [], currency: ctx.currency, amountTotal: packageLine?.subtotal ?? 0 },
+    { refId: String(checked.hotelCode), title, amount: from, currency: ctx.currency },
+  );
   const started = await startCheckout({
     payload,
     stripe,
@@ -116,9 +136,9 @@ export async function POST(request: NextRequest) {
       customerName: `${holder.firstName} ${holder.lastName}`,
       customerEmail: data.customerEmail,
       customerPhone: data.customerPhone,
-      items: [{ kind: "hotel", refId: String(checked.hotelCode), title, unitAmount: from, quantity: 1, subtotal: from }],
-      currency: ctx.currency,
-      amountTotal: from,
+      items: priced.items,
+      currency: priced.currency,
+      amountTotal: priced.amountTotal,
       travelDate: checked.checkIn,
       adults: data.adults,
       children: data.childAges.length,
@@ -141,12 +161,10 @@ export async function POST(request: NextRequest) {
         rateComments: checked.comments,
       },
     },
-    lineItems: [
-      {
-        quantity: 1,
-        price_data: { currency: ctx.currency.toLowerCase(), unit_amount: from, product_data: { name: title } },
-      },
-    ],
+    lineItems: priced.items.map((item) => ({
+      quantity: item.quantity,
+      price_data: { currency: priced.currency.toLowerCase(), unit_amount: item.unitAmount, product_data: { name: item.title } },
+    })),
   });
 
   if (!started.ok) {

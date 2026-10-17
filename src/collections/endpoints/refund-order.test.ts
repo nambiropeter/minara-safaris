@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   db: { findByID: vi.fn(), update: vi.fn() },
   refundsCreate: vi.fn(),
+  retrieve: vi.fn(),
   cancelBooking: vi.fn(),
   hb: { config: { apiKey: "k", secret: "s", baseUrl: "https://x" } as unknown },
 }));
@@ -10,7 +11,7 @@ const h = vi.hoisted(() => ({
 vi.mock("@/lib/hotelbeds", () => ({ getHotelbeds: () => h.hb.config, cancelBooking: h.cancelBooking }));
 
 vi.mock("@/lib/stripe", () => ({
-  getStripe: vi.fn(() => ({ refunds: { create: h.refundsCreate } })),
+  getStripe: vi.fn(() => ({ refunds: { create: h.refundsCreate }, paymentIntents: { retrieve: h.retrieve } })),
 }));
 
 import { refundOrder } from "@/collections/endpoints/refund-order";
@@ -22,6 +23,7 @@ const order = {
   status: "paid",
   currency: "KES",
   amountTotal: 5800000,
+  items: [{ kind: "package", subtotal: 5800000 }],
   staffNotes: null,
   stripe: { paymentIntentId: "pi_1" },
 };
@@ -227,3 +229,52 @@ describe("refundOrder: hotel orders", () => {
     expect(h.cancelBooking).not.toHaveBeenCalled();
   });
 });
+
+describe("refundOrder: package + hotel bundles", () => {
+  const bundle = (supplier: Record<string, unknown>) => ({
+    ...order,
+    amountTotal: 6686200,
+    items: [
+      { kind: "package", subtotal: 1800000 },
+      { kind: "hotel", subtotal: 4886200 },
+    ],
+    supplier: { name: "hotelbeds", status: "booked", reference: "286-1", cancellationPolicies: [{ from: new Date(Date.now() + 86_400_000).toISOString(), amount: 1 }], ...supplier },
+  });
+  const stripeHolds = (amount: number, refunded: number) => h.retrieve.mockResolvedValue({ latest_charge: { amount, amount_refunded: refunded } });
+
+  beforeEach(() => {
+    h.hb.config = { apiKey: "k", secret: "s", baseUrl: "https://x" };
+    h.cancelBooking.mockResolvedValue({ outcome: "cancelled", feeNet: 0 });
+  });
+
+  it("cancels the hotel, then refunds everything Stripe still holds", async () => {
+    h.db.findByID.mockResolvedValue(bundle({}));
+    stripeHolds(6686200, 0);
+    expect((await refundOrder(req())).status).toBe(200);
+    expect(h.cancelBooking).toHaveBeenCalledOnce();
+    expect(h.refundsCreate).toHaveBeenCalledWith(expect.objectContaining({ amount: 6686200 }), expect.anything());
+  });
+
+  it("after a refused hotel was already refunded, refunds only the package's part and cancels nothing", async () => {
+    h.db.findByID.mockResolvedValue(bundle({ status: "failed" }));
+    stripeHolds(6686200, 4886200);
+    expect((await refundOrder(req())).status).toBe(200);
+    expect(h.cancelBooking).not.toHaveBeenCalled();
+    expect(h.refundsCreate).toHaveBeenCalledWith(expect.objectContaining({ amount: 1800000 }), expect.anything());
+  });
+
+  it("refuses when nothing is left to refund", async () => {
+    h.db.findByID.mockResolvedValue(bundle({ status: "failed" }));
+    stripeHolds(6686200, 6686200);
+    expect((await refundOrder(req())).status).toBe(409);
+    expect(h.refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it("a hotel-only order is still refunded without an explicit amount", async () => {
+    h.db.findByID.mockResolvedValue({ ...order, items: [{ kind: "hotel", subtotal: 5800000 }], supplier: { name: "hotelbeds", status: "failed" } });
+    await refundOrder(req());
+    expect(h.refundsCreate.mock.calls[0][0]).not.toHaveProperty("amount");
+    expect(h.retrieve).not.toHaveBeenCalled();
+  });
+});
+

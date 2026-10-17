@@ -6,6 +6,7 @@ import { z } from "zod";
 import configPromise from "@payload-config";
 import { bookRoom, getHotelbeds } from "@/lib/hotelbeds";
 import { formatMoney, type Currency } from "@/lib/money";
+import { orderParts } from "@/lib/order-parts";
 import { notifyHotelRefused, notifyOrderPaid, notifyStaff } from "@/lib/notify-order";
 import { refundPayment } from "@/lib/refund";
 import { getStripe } from "@/lib/stripe";
@@ -254,6 +255,9 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
     return;
   }
 
+  // In a bundle the package still needs staff, so the hotel booking never confirms the order.
+  const { bundle, hotelSubtotal } = orderParts(order);
+
   const holder = guests.data[0];
   const result = await bookRoom(config, {
     clientReference: order.orderNumber,
@@ -278,7 +282,7 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
           note: `Booked at EUR ${booking.totalNet}, above the EUR ${quoted} quoted. Margin is lower than planned.`,
         }),
       },
-      { status: "confirmed" },
+      bundle ? {} : { status: "confirmed" },
     );
     if (bookingToken) {
       await notifyOrderPaid(confirmed, bookingToken).catch((e) =>
@@ -286,7 +290,7 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
       );
     }
     await alertStaff(
-      `New hotel booking - ${order.orderNumber}`,
+      `${bundle ? "Hotel booked, package needs confirming" : "New hotel booking"} - ${order.orderNumber}`,
       [
         `${order.customerName ?? ""} <${order.customerEmail}>`,
         `Hotelbeds reference: ${booking.reference}`,
@@ -303,8 +307,10 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
       ? await refundPayment(stripe, {
           paymentIntentId,
           orderId: order.id,
+          // A bundle's package stands, so only the hotel's part goes back.
+          ...(bundle && { amount: hotelSubtotal }),
           // Not the staff button's key: a refund from either party must never be mistaken for the other's.
-          idempotencyKey: `refund-order-${order.id}-auto`,
+          idempotencyKey: `refund-order-${order.id}-auto${bundle ? "-hotel" : ""}`,
           requestedBy: "system: Hotelbeds refused the booking",
         })
       : ({ ok: false, reason: "failed", message: "no Stripe payment recorded" } as const);
@@ -312,10 +318,10 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
 
     await recordSupplier(payload, order, {
       status: "failed",
-      note: `Hotelbeds did not book this: ${result.reason}. ${refunded ? "Refunded automatically." : "AUTOMATIC REFUND FAILED: refund it by hand."}`,
+      note: `Hotelbeds did not book this: ${result.reason}. ${refunded ? `Refunded automatically${bundle ? ` (hotel part only, ${formatMoney(hotelSubtotal, order.currency as Currency)}; the package stands and still needs confirming)` : ""}.` : "AUTOMATIC REFUND FAILED: refund it by hand."}`,
     });
     await alertStaff(
-      refunded ? `Hotel refused, customer refunded - ${order.orderNumber}` : `URGENT: hotel refused AND refund failed - ${order.orderNumber}`,
+      refunded ? `Hotel refused, customer refunded${bundle ? " (hotel part)" : ""} - ${order.orderNumber}` : `URGENT: hotel refused AND refund failed - ${order.orderNumber}`,
       `${result.reason}\nCustomer: ${order.customerEmail}`,
     );
     if (refunded) {
