@@ -14,6 +14,8 @@ export function RefundButton({ id, amount }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<"idle" | "confirm" | "working" | "done">("idle");
   const [error, setError] = useState("");
+  // What the server actually refunded: for a bundle whose hotel was already refunded, less than the order total.
+  const [sent, setSent] = useState(amount);
 
   async function refund() {
     setStep("working");
@@ -26,6 +28,7 @@ export function RefundButton({ id, amount }: Props) {
         setStep("confirm");
         return;
       }
+      if (typeof data.amount === "string") setSent(data.amount);
       setStep("done");
       // Stripe tells our webhook a moment later; that is what flips the status.
       setTimeout(() => router.refresh(), 3000);
@@ -41,7 +44,7 @@ export function RefundButton({ id, amount }: Props) {
 
       {step === "done" ? (
         <p>
-          Refund of {amount} sent to Stripe. This order will show as refunded in a few seconds.
+          Refund of {sent} sent to Stripe. This order will show as refunded in a few seconds.
         </p>
       ) : (
         <>

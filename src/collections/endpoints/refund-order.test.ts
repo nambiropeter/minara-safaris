@@ -104,6 +104,16 @@ describe("refundOrder", () => {
     expect(data.staffNotes).toContain("Refund of KES 58,000.00 requested by agent@minara.example");
   });
 
+  it("reports the amount refunded, and does not log the same refund twice when it is repeated", async () => {
+    const first = await (await refundOrder(req())).json();
+    expect(first).toEqual({ ok: true, amount: "KES 58,000.00" });
+
+    h.db.update.mockClear();
+    h.db.findByID.mockResolvedValue({ ...order, staffNotes: "Refund of KES 58,000.00 requested by agent@minara.example." });
+    expect((await refundOrder(req())).status).toBe(200);
+    expect(h.db.update).not.toHaveBeenCalled();
+  });
+
   it("still reports success if the audit note cannot be saved, since the money has already moved", async () => {
     h.db.update.mockRejectedValue(new Error("db down"));
     const res = await refundOrder(req());

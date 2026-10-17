@@ -121,19 +121,23 @@ export const refundOrder: PayloadHandler = async (req) => {
   }
 
   // Audit trail: who asked. The money has moved by now, so a failure to write
-  // the note must not turn this into an error.
-  try {
-    const refunded = formatMoney(amount ?? order.amountTotal, order.currency as Currency);
-    await req.payload.update({
-      collection: "orders",
-      id: order.id,
-      data: {
-        staffNotes: `${order.staffNotes ?? ""}\nRefund of ${refunded} requested by ${req.user.email}.`.trim(),
-      },
-    });
-  } catch (error) {
-    console.error("refund issued but audit note failed", error, { orderId: order.id });
+  // the note must not turn this into an error. A repeat of the same request (the button
+  // reappears after a reload while the webhook is still pending) replays the same Stripe
+  // refund, so it must not log a second one.
+  const refunded = formatMoney(amount ?? order.amountTotal, order.currency as Currency);
+  const line = `Refund of ${refunded} requested by ${req.user.email}.`;
+  if (!order.staffNotes?.includes(line)) {
+    try {
+      await req.payload.update({
+        collection: "orders",
+        id: order.id,
+        data: { staffNotes: `${order.staffNotes ?? ""}\n${line}`.trim() },
+      });
+    } catch (error) {
+      console.error("refund issued but audit note failed", error, { orderId: order.id });
+    }
   }
 
-  return json({ ok: true });
+  // The amount actually refunded, which for a bundle is not the order total.
+  return json({ ok: true, amount: refunded });
 };
