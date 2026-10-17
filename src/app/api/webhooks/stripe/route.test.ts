@@ -290,7 +290,11 @@ describe("hotel orders", () => {
       orderId: 7,
       idempotencyKey: "refund-order-7-auto",
     }));
-    expect(supplierUpdates().at(-1)).toMatchObject({ status: "failed", note: expect.stringContaining("Refunded automatically") });
+    expect(supplierUpdates().at(-1)).toMatchObject({ status: "failed", note: expect.stringContaining("PRODUCT_NOT_AVAILABLE") });
+    // The refund raises charge.refunded, which rewrites the order from a stale read within a second:
+    // the failure must already be saved by then or it is overwritten (seen live, 2026-10-17).
+    const failedAt = h.db.update.mock.invocationCallOrder[h.db.update.mock.calls.findIndex(([a]) => a.data.supplier?.status === "failed")];
+    expect(failedAt).toBeLessThan(h.refund.mock.invocationCallOrder[0]);
     expect(statusUpdates().some((d) => d.status === "confirmed")).toBe(false);
     expect(notifyHotelRefused).toHaveBeenCalled();
     expect(notifyOrderPaid).not.toHaveBeenCalled();
@@ -311,7 +315,8 @@ describe("hotel orders", () => {
     h.bookRoom.mockResolvedValue({ outcome: "rejected", reason: "sold out" });
     h.refund.mockResolvedValue({ ok: false, reason: "already_refunded" });
     await send("checkout.session.completed", session());
-    expect(supplierUpdates().at(-1).note).toContain("Refunded automatically");
+    expect(supplierUpdates().at(-1).note).not.toContain("AUTOMATIC REFUND FAILED");
+    expect(notifyHotelRefused).toHaveBeenCalled();
   });
 
   it("does NOT refund or rebook when it cannot tell whether Hotelbeds booked: a human checks", async () => {
@@ -383,3 +388,50 @@ describe("hotel orders", () => {
     expect(notifyOrderPaid).toHaveBeenCalledWith(expect.objectContaining({ status: "paid" }), "tok");
   });
 });
+
+describe("package + hotel bundles", () => {
+  const bundle = {
+    ...pendingOrder,
+    amountTotal: 200000,
+    items: [
+      { kind: "package", title: "Mara", quantity: 2, subtotal: 150000 },
+      { kind: "hotel", title: "The Boma, 3 nights", quantity: 1, subtotal: 50000 },
+    ],
+    supplier: { name: "hotelbeds", status: "pending", rateKey: "KEY", netAmount: 100, guests: [{ type: "AD", name: "Amina", surname: "Otieno" }] },
+  };
+  const updates = () => h.db.update.mock.calls.map(([arg]) => arg.data);
+
+  beforeEach(() => {
+    h.hb.config = { apiKey: "k", secret: "s", baseUrl: "https://x" };
+    h.db.findByID.mockResolvedValue(bundle);
+    h.db.update.mockImplementation(async ({ data }) => ({ ...bundle, ...data }));
+    h.refund.mockResolvedValue({ ok: true });
+  });
+
+  it("a booked hotel does not confirm the order: the package still needs staff", async () => {
+    h.bookRoom.mockResolvedValue({ outcome: "booked", booking: { reference: "286-1", clientReference: "MS-2026-TEST", totalNet: 100, supplierName: "X", supplierVat: "1" } });
+    await send("checkout.session.completed", session());
+    expect(updates().some((d) => d.status === "confirmed")).toBe(false);
+    expect(updates().at(-1).supplier).toMatchObject({ status: "booked", reference: "286-1" });
+  });
+
+  it("a refused hotel refunds only its own subtotal, under its own key, and leaves the order paid", async () => {
+    h.bookRoom.mockResolvedValue({ outcome: "rejected", reason: "sold out" });
+    await send("checkout.session.completed", session());
+    expect(h.refund).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ amount: 50000, idempotencyKey: "refund-order-7-auto-hotel" }),
+    );
+    expect(updates().filter((d) => d.status).map((d) => d.status)).toEqual(["paid"]);
+    expect(updates().at(-1).supplier).toMatchObject({ status: "failed" });
+    expect(notifyHotelRefused).toHaveBeenCalled();
+  });
+
+  it("an unknown outcome refunds nothing, for a bundle as for a hotel alone", async () => {
+    h.bookRoom.mockResolvedValue({ outcome: "unknown", reason: "timeout" });
+    await send("checkout.session.completed", session());
+    expect(h.refund).not.toHaveBeenCalled();
+    expect(updates().at(-1).supplier).toMatchObject({ status: "unknown" });
+  });
+});
+

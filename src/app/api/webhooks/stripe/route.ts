@@ -302,6 +302,14 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
   }
 
   if (result.outcome === "rejected") {
+    // Recorded BEFORE the refund. The refund triggers `charge.refunded`, whose handler rewrites
+    // this order from its own earlier read within a second; anything we saved after the refund
+    // would be overwritten by that stale copy (seen live 2026-10-17: status stuck on "booking").
+    await recordSupplier(payload, order, {
+      status: "failed",
+      note: `Hotelbeds did not book this: ${result.reason}. ${bundle ? `The hotel part (${formatMoney(hotelSubtotal, order.currency as Currency)}) is being refunded automatically; the package stands and still needs confirming.` : "Refunding automatically."}`,
+    });
+
     const paymentIntentId = order.stripe?.paymentIntentId;
     const refund = paymentIntentId
       ? await refundPayment(stripe, {
@@ -316,10 +324,13 @@ async function fulfilHotel(payload: Payload, stripe: Stripe, order: Order, booki
       : ({ ok: false, reason: "failed", message: "no Stripe payment recorded" } as const);
     const refunded = refund.ok || refund.reason === "already_refunded";
 
-    await recordSupplier(payload, order, {
-      status: "failed",
-      note: `Hotelbeds did not book this: ${result.reason}. ${refunded ? `Refunded automatically${bundle ? ` (hotel part only, ${formatMoney(hotelSubtotal, order.currency as Currency)}; the package stands and still needs confirming)` : ""}.` : "AUTOMATIC REFUND FAILED: refund it by hand."}`,
-    });
+    // A failed refund raises no `charge.refunded`, so nothing can overwrite this one.
+    if (!refunded) {
+      await recordSupplier(payload, order, {
+        status: "failed",
+        note: `Hotelbeds did not book this: ${result.reason}. AUTOMATIC REFUND FAILED: refund it by hand.`,
+      });
+    }
     await alertStaff(
       refunded ? `Hotel refused, customer refunded${bundle ? " (hotel part)" : ""} - ${order.orderNumber}` : `URGENT: hotel refused AND refund failed - ${order.orderNumber}`,
       `${result.reason}\nCustomer: ${order.customerEmail}`,
