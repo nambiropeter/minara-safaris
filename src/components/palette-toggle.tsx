@@ -22,9 +22,9 @@ export function PaletteToggle({ className }: { className?: string }) {
   return (
     <Button
       variant="ghost"
-      size="icon-lg"
+      size="icon"
       className={cn(
-        "size-11 rounded-full border border-border/80 transition-colors hover:border-primary hover:bg-muted/50",
+        "size-8.5 rounded-full border border-border/70 text-muted-foreground hover:text-foreground transition-colors hover:border-primary hover:bg-muted/50",
         className,
       )}
       aria-label="Switch between ocean and sunset colours"
@@ -33,8 +33,8 @@ export function PaletteToggle({ className }: { className?: string }) {
     >
       {/* Both icons render and CSS picks one off the <html> attribute, so the
           control is right before hydration, same trick as ThemeToggle. */}
-      <Waves className="size-5 [[data-palette=ocean]_&]:hidden" />
-      <SunHorizon className="hidden size-5 [[data-palette=ocean]_&]:block" />
+      <Waves className="size-4 [[data-palette=ocean]_&]:hidden" />
+      <SunHorizon className="hidden size-4 [[data-palette=ocean]_&]:block" />
     </Button>
   );
 }
