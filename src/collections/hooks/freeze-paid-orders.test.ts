@@ -114,6 +114,15 @@ describe("assertNotRepricingPaidOrder: hotel supplier figures", () => {
     ).not.toThrow();
   });
 
+  it("reads a cancellation date as a moment, not as text: the admin form sends the same instant back in UTC", () => {
+    const saved = { ...paid, supplier: { ...supplier, cancellationPolicies: [{ from: "2026-10-21T23:59:00+03:00", amount: 1_997_400 }] } };
+    const sameInstant = [{ from: "2026-10-21T20:59:00.000Z", amount: 1_997_400 }];
+    expect(() => assertNotRepricingPaidOrder({ previous: saved, incoming: { supplier: { ...supplier, cancellationPolicies: sameInstant } } })).not.toThrow();
+
+    const laterInstant = [{ from: "2026-10-22T20:59:00.000Z", amount: 1_997_400 }];
+    expect(() => assertNotRepricingPaidOrder({ previous: saved, incoming: { supplier: { ...supplier, cancellationPolicies: laterInstant } } })).toThrow(/already been paid/);
+  });
+
   it("leaves a package order alone when its empty supplier group is merged back as nulls", () => {
     expect(() =>
       assertNotRepricingPaidOrder({

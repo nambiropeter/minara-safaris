@@ -19,8 +19,11 @@ type Priced = {
 const MONEY_KEYS = ["netAmount", "marginBps", "fxEurPerKes", "fxUsdPerKes"] as const;
 
 const clean = (value: unknown) => (value === null || value === undefined ? undefined : value);
+// A date is a moment, not a string: the admin form sends back "…T20:59:00.000Z" for what was
+// stored as "…T23:59:00+03:00", and reading that as a price change blocked every status edit.
+const moment = (iso: string | null | undefined) => (iso ? Date.parse(iso) || iso : undefined);
 const policies = (list: SupplierMoney["cancellationPolicies"]) =>
-  JSON.stringify((list ?? []).map((p) => ({ from: clean(p.from), amount: clean(p.amount) })));
+  JSON.stringify((list ?? []).map((p) => ({ from: moment(p.from), amount: clean(p.amount) })));
 
 /**
  * True if an update changes the facts a hotel's price was built from: the supplier's net,
