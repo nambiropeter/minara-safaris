@@ -18,6 +18,14 @@ type Priced = {
 
 const MONEY_KEYS = ["netAmount", "marginBps", "fxEurPerKes", "fxUsdPerKes"] as const;
 
+// Line items by their figures only. Payload adds per-row ids, the admin form may return numbers as
+// strings and in another key order; none of that is a price change.
+type Row = { kind?: unknown; refId?: unknown; title?: unknown; unitAmount?: unknown; quantity?: unknown; subtotal?: unknown };
+const lines = (items: unknown) =>
+  JSON.stringify(
+    (Array.isArray(items) ? (items as Row[]) : []).map((r) => [r.kind, r.refId, r.title, Number(r.unitAmount), Number(r.quantity), Number(r.subtotal)]),
+  );
+
 const clean = (value: unknown) => (value === null || value === undefined ? undefined : value);
 // A date is a moment, not a string: the admin form sends back "…T20:59:00.000Z" for what was
 // stored as "…T23:59:00+03:00", and reading that as a price change blocked every status edit.
@@ -67,7 +75,7 @@ export function assertNotRepricingPaidOrder(args: { previous?: Priced | null; in
       ? { field: "amountTotal", was: previous.amountTotal, now: args.incoming.amountTotal }
       : args.incoming.currency !== undefined && args.incoming.currency !== previous.currency
         ? { field: "currency", was: previous.currency, now: args.incoming.currency }
-        : args.incoming.items !== undefined && JSON.stringify(args.incoming.items) !== JSON.stringify(previous.items)
+        : args.incoming.items !== undefined && lines(args.incoming.items) !== lines(previous.items)
           ? { field: "items", was: JSON.stringify(previous.items), now: JSON.stringify(args.incoming.items) }
           : changedSupplierMoney(args.incoming.supplier, previous.supplier);
 

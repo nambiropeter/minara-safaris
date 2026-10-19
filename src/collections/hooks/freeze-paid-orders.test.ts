@@ -114,6 +114,28 @@ describe("assertNotRepricingPaidOrder: hotel supplier figures", () => {
     ).not.toThrow();
   });
 
+  it("compares line items by their figures, not by how the form spells them", () => {
+    const stored = [
+      { id: "a1", kind: "package", refId: "23", title: "Nairobi Wildlife Day", unitAmount: 950_000, quantity: 2, subtotal: 1_900_000 },
+      { id: "b2", kind: "hotel", refId: "195976", title: "The Boma", unitAmount: 1_634_200, quantity: 1, subtotal: 1_634_200 },
+    ];
+    const order = { ...paid, items: stored };
+    // Same figures: no ids, a different key order, numbers sent back as strings.
+    const roundTrip = [
+      { subtotal: "1900000", quantity: "2", unitAmount: "950000", title: "Nairobi Wildlife Day", refId: "23", kind: "package" },
+      { subtotal: 1_634_200, quantity: 1, unitAmount: 1_634_200, title: "The Boma", refId: "195976", kind: "hotel" },
+    ];
+    expect(() => assertNotRepricingPaidOrder({ previous: order, incoming: { items: roundTrip } })).not.toThrow();
+
+    for (const tampered of [
+      [{ ...roundTrip[0], subtotal: 1 }, roundTrip[1]],
+      [roundTrip[0]],
+      [roundTrip[0], { ...roundTrip[1], unitAmount: 1 }],
+    ]) {
+      expect(() => assertNotRepricingPaidOrder({ previous: order, incoming: { items: tampered } })).toThrow(/\(items\)/);
+    }
+  });
+
   it("reads a cancellation date as a moment, not as text: the admin form sends the same instant back in UTC", () => {
     const saved = { ...paid, supplier: { ...supplier, cancellationPolicies: [{ from: "2026-10-21T23:59:00+03:00", amount: 1_997_400 }] } };
     const sameInstant = [{ from: "2026-10-21T20:59:00.000Z", amount: 1_997_400 }];
