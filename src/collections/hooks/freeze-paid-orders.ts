@@ -34,12 +34,17 @@ const policies = (list: SupplierMoney["cancellationPolicies"]) =>
  * merged document or only the changed group, and either way an absent key is "not touched",
  * while a null or per-row id Payload adds on merge must not read as a change.
  */
-function changesSupplierMoney(incoming: SupplierMoney | null | undefined, previous: SupplierMoney | null | undefined): boolean {
-  if (!incoming) return false;
+function changedSupplierMoney(incoming: SupplierMoney | null | undefined, previous: SupplierMoney | null | undefined): { field: string; was: unknown; now: unknown } | null {
+  if (!incoming) return null;
   for (const key of MONEY_KEYS) {
-    if (incoming[key] !== undefined && clean(incoming[key]) !== clean(previous?.[key])) return true;
+    if (incoming[key] !== undefined && clean(incoming[key]) !== clean(previous?.[key])) {
+      return { field: `supplier.${key}`, was: previous?.[key], now: incoming[key] };
+    }
   }
-  return incoming.cancellationPolicies !== undefined && policies(incoming.cancellationPolicies) !== policies(previous?.cancellationPolicies);
+  if (incoming.cancellationPolicies !== undefined && policies(incoming.cancellationPolicies) !== policies(previous?.cancellationPolicies)) {
+    return { field: "supplier.cancellationPolicies", was: policies(previous?.cancellationPolicies), now: policies(incoming.cancellationPolicies) };
+  }
+  return null;
 }
 
 /**
@@ -57,15 +62,18 @@ export function assertNotRepricingPaidOrder(args: { previous?: Priced | null; in
   const previous = args.previous;
   if (!previous || !previous.status || !FROZEN_STATUSES.has(previous.status)) return;
 
-  const touchesMoney =
-    (args.incoming.amountTotal !== undefined &&
-      args.incoming.amountTotal !== previous.amountTotal) ||
-    (args.incoming.currency !== undefined && args.incoming.currency !== previous.currency) ||
-    (args.incoming.items !== undefined &&
-      JSON.stringify(args.incoming.items) !== JSON.stringify(previous.items)) ||
-    changesSupplierMoney(args.incoming.supplier, previous.supplier);
+  const changed =
+    args.incoming.amountTotal !== undefined && args.incoming.amountTotal !== previous.amountTotal
+      ? { field: "amountTotal", was: previous.amountTotal, now: args.incoming.amountTotal }
+      : args.incoming.currency !== undefined && args.incoming.currency !== previous.currency
+        ? { field: "currency", was: previous.currency, now: args.incoming.currency }
+        : args.incoming.items !== undefined && JSON.stringify(args.incoming.items) !== JSON.stringify(previous.items)
+          ? { field: "items", was: JSON.stringify(previous.items), now: JSON.stringify(args.incoming.items) }
+          : changedSupplierMoney(args.incoming.supplier, previous.supplier);
 
-  if (touchesMoney) {
-    throw new Error("This order has already been paid; its figures cannot be changed.");
+  if (changed) {
+    // Name the field: "already paid" alone gave staff no way to tell a real repricing from a form round-trip artefact.
+    console.error("paid order figure change refused", { field: changed.field, was: String(changed.was).slice(0, 400), now: String(changed.now).slice(0, 400) });
+    throw new Error(`This order has already been paid; its figures cannot be changed. (${changed.field})`);
   }
 }
